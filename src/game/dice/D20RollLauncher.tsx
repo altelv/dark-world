@@ -29,8 +29,8 @@ export const D20RollLauncher: React.FC<D20RollLauncherProps> = ({
     const res = resolveRoll(char, request);
     setValue(res.d20Raw);
 
-    // суммарная длительность: 2000 (spin) + 220 (flash) + 1000 (reveal hold) + 600 (gold) + 450 (fade) + 50 запас
-    const totalMs = 2000 + 220 + 1000 + 600 + 450 + 50;
+    // Суммарная длительность: 2000 (spin) + 280 (flash) + 1600 (reveal hold) + 900 (fade) + запас 100
+    const totalMs = 2000 + 280 + 1600 + 900 + 100;
     const timer = setTimeout(() => {
       onResolved(res);
       setPending(false);
