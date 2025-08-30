@@ -1,30 +1,20 @@
 // src/game/dice/index.ts
-// Универсальный баррель: подхватывает И именованные, И default-экспорты.
-// Это защищает сборку Rollup/Vercel от "is not exported by ..." при разных вариантах экспорта внутри файлов.
 
-import * as ModOverlay from "./D20Overlay";
-import * as ModLauncher from "./D20RollLauncher";
-import * as ModService from "./D20RollService";
+export { default as D20RollLauncher } from "./D20RollLauncher";
+export { D20RollLauncher as NamedD20RollLauncher } from "./D20RollLauncher"; // на случай, если где-то нужен именно именованный
 
-// Гарантируем наличие одноимённых экспортов
-export const D20Overlay =
-  (ModOverlay as any).D20Overlay ?? (ModOverlay as any).default;
+export { D20Overlay } from "./D20Overlay";
+export { resolveRoll } from "./D20RollService";
 
-export const D20RollLauncher =
-  (ModLauncher as any).D20RollLauncher ?? (ModLauncher as any).default;
-
-export const resolveRoll =
-  (ModService as any).resolveRoll ?? (ModService as any).default;
-
-// Пробрасываем ВСЕ именованные экспорты из модулей (на всякий случай)
-export * from "./D20Overlay";
+// проброс всех именованных экспорта из файлов (не мешает)
 export * from "./D20RollLauncher";
+export * from "./D20Overlay";
 export * from "./D20RollService";
 
-// Типы наружу
+// типы наружу
 export type { RollRequest, RollResolution, CharacterState } from "../state/types";
 
-// Набор путей к ассетам (опционально)
+// опционально — пути к ассетам
 export const D20_ASSET_PATHS = {
   spinFrames: [
     "/assets/d20/spin_1.png",
