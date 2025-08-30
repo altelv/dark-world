@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { drawPixelNumber } from "./PixelDigits";
+import { useSfx } from "../audio/Sfx";
 
 /**
- * Фин-тюнинг:
- * - Старт: фиолетовая вспышка (большая, как раньше) 0.12s expand + 0.28s fade, вместе стартуют спин и фоновая пульсация.
- * - Спин: 3.0s, кадр/60мс, прелоад всех спрайтов.
- * - Золотая вспышка: такого же «большого» размера, что и фиолетовая (внешний радиус возвращён), длит. 0.18s.
- * - Цифра появляется одновременно со второй вспышкой (под ней по слоям), смещена +2px вправо, +6px вниз, масштаб ≈56px.
- * - Искры появляются ТОЛЬКО при выпавшем 20 и живут дольше вспышки.
- * - Звук: WebAudio-заглушки — спин-журчание/тики и звук результата (особые для 1 и 20).
+ * D20Overlay: со звуком через Sfx (файлы опциональны, есть фолбэк на пики).
+ * Файлы кладём (если будут) в /public/assets/audio/:
+ *  - d20_spin.ogg/mp3               — луп спина (не обязателен)
+ *  - d20_result_normal.ogg/mp3      — обычный результат
+ *  - d20_result_crit.ogg/mp3        — для 20
+ *  - d20_result_fail.ogg/mp3        — для 1
  */
 
 export interface D20OverlayProps {
@@ -16,7 +16,7 @@ export interface D20OverlayProps {
   resultFrameDefault: string;    // 128×128
   resultFrameSpecial: string;    // для {1,3,5,6,8,10,13,18}
   value: number;                 // 1..20
-  durationMs?: number;           // длительность спина (по умолчанию 3000)
+  durationMs?: number;           // спин, по умолчанию 3000
   onDone?: () => void;
 }
 
@@ -24,16 +24,16 @@ const SPECIAL_SET = new Set([1,3,5,6,8,10,13,18]);
 
 type Phase = "spin" | "flash" | "reveal" | "fade" | "done";
 
-// Тайминги
+// Тайминги (как полировали ранее)
 const INTRO_EXPAND_MS = 120;
 const INTRO_FADE_MS   = 280;
 const SPIN_MS         = 3000;
-const FLASH_MS        = 180;   // «миг»
-const REVEAL_HOLD_MS  = 2600;  // пауза на результате
-const TINT_MS         = 900;   // белый → золото
-const FADE_MS         = 1700;  // общий fade
-const PULSE_MS        = 2600;  // медленная пульсация
-const SPARKS_MS       = 1600;  // искры живут дольше вспышки
+const FLASH_MS        = 180;
+const REVEAL_HOLD_MS  = 2600;
+const TINT_MS         = 900;
+const FADE_MS         = 1700;
+const PULSE_MS        = 2600;
+const SPARKS_MS       = 1600;
 
 // Утилиты
 function clamp(t: number, lo = 0, hi = 1) { return Math.max(lo, Math.min(hi, t)); }
@@ -59,82 +59,8 @@ function usePreloadImages(srcs: string[]) {
   return ready;
 }
 
-/* ===================== AUDIO (WebAudio заглушки) ===================== */
-function useAudio() {
-  const ctxRef = useRef<AudioContext | null>(null);
-  const spinIntervalRef = useRef<number | null>(null);
+/* ========== визуальные элементы: вспышки/фон/искры (как в предыдущей версии) ========== */
 
-  function ensureCtx() {
-    if (!ctxRef.current) ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    if (ctxRef.current.state === "suspended") ctxRef.current.resume();
-    return ctxRef.current!;
-  }
-
-  function beep(freq: number, durMs: number, type: OscillatorType = "sine", gain = 0.03) {
-    const ctx = ensureCtx();
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = type; osc.frequency.value = freq;
-    g.gain.value = 0;
-    osc.connect(g); g.connect(ctx.destination);
-    const now = ctx.currentTime;
-    const dur = durMs / 1000;
-    g.gain.linearRampToValueAtTime(gain, now + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-    osc.start(now); osc.stop(now + dur + 0.01);
-  }
-
-  // мягкое «журчание» спина: редкие короткие тихие тики с лёгким рандомом частоты
-  function startSpin() {
-    const ctx = ensureCtx();
-    // первый тик сразу
-    beep(520 + Math.random()*80, 40, "sine", 0.02);
-    stopSpin();
-    spinIntervalRef.current = window.setInterval(() => {
-      // 90–130мс между тиками
-      const freq = 520 + Math.random() * 120;
-      beep(freq, 35, "sine", 0.018);
-    }, 110);
-  }
-
-  function stopSpin() {
-    if (spinIntervalRef.current !== null) {
-      clearInterval(spinIntervalRef.current);
-      spinIntervalRef.current = null;
-    }
-  }
-
-  // звук результата
-  function resultSound(kind: "normal" | "crit" | "fail") {
-    const ctx = ensureCtx();
-    if (kind === "crit") {
-      // мини-аккорд-триоль
-      beep(523.25, 140, "triangle", 0.04); // C5
-      setTimeout(() => beep(659.25, 140, "triangle", 0.04), 90);  // E5
-      setTimeout(() => beep(783.99, 220, "triangle", 0.05), 180); // G5
-    } else if (kind === "fail") {
-      // низкий «бзз»
-      beep(196.00, 260, "sawtooth", 0.04);
-    } else {
-      // обычный «пик»
-      beep(660.00, 140, "square", 0.03);
-    }
-  }
-
-  // очистка на размонтирование
-  useEffect(() => {
-    return () => {
-      stopSpin();
-      if (ctxRef.current) ctxRef.current.close().catch(()=>{});
-    };
-  }, []);
-
-  return { startSpin, stopSpin, resultSound, ensureCtx };
-}
-
-/* ===================== ВСПЫШКИ/ФОН/ИСКРЫ ===================== */
-
-// фиолетовая стартовая вспышка (большая, как была)
 function IntroPurpleFlash({ show }: { show: boolean }) {
   if (!show) return null;
   return (
@@ -152,7 +78,6 @@ function IntroPurpleFlash({ show }: { show: boolean }) {
   );
 }
 
-// фоновая пульсация (синхронно со спином)
 function BackgroundGlow({ active, phase }: { active: boolean; phase: Phase }) {
   const isFading = phase === "fade" || phase === "done";
   const isFlash = phase === "flash";
@@ -196,7 +121,6 @@ function BackgroundGlow({ active, phase }: { active: boolean; phase: Phase }) {
   );
 }
 
-// золотая круглая вспышка: большой размер (как у фиолетовой), мягкие края; жёсткий центр R=30
 function CircularGoldFlash({ show }: { show: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -205,20 +129,19 @@ function CircularGoldFlash({ show }: { show: boolean }) {
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     const cx = W / 2; const cy = H / 2 + 6;
     const inner = 30;   // жёсткий центр
-    const outer = 128;  // ВЕРНУЛИ исходный внешний радиус (как у большой вспышки)
+    const outer = 128;  // большой внешний радиус
     const gold = { r: 255, g: 213, b: 74 };
 
     const img = ctx.createImageData(W, H);
     const data = img.data;
-
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const dx = x - cx, dy = y - cy;
       const r = Math.hypot(dx, dy);
       let a = 0;
       if (r <= inner) a = 1;
       else {
-        const t = clamp((r - inner) / (outer - inner));
-        a = 1 - smoothstep(t);
+        const t = Math.max(0, Math.min(1, (r - inner) / (outer - inner)));
+        a = 1 - (t*t*(3-2*t)); // smoothstep
       }
       const i = (y * W + x) * 4;
       data[i+0] = gold.r; data[i+1] = gold.g; data[i+2] = gold.b; data[i+3] = Math.round(a * 255);
@@ -243,36 +166,27 @@ function CircularGoldFlash({ show }: { show: boolean }) {
   );
 }
 
-// искры (только при 20)
 function Sparks({ active }: { active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!active) return;
-    const c = ref.current!;
-    const ctx = c.getContext("2d")!;
-    (ctx as any).imageSmoothingEnabled = false;
-
-    const W = 256, H = 256;
-    const cx = W / 2, cy = H / 2 + 6;
-
-    // увеличенные параметры (летят дальше/быстрее)
+    const c = ref.current!; const ctx = c.getContext("2d")!; (ctx as any).imageSmoothingEnabled = false;
+    const W = 256, H = 256; const cx = W / 2, cy = H / 2 + 6;
     const N = 42;
     type S = { x:number; y:number; vx:number; vy:number; life:number; };
     const sparks: S[] = [];
     for (let i=0;i<N;i++){
       const ang = Math.random() * Math.PI * 2;
-      const speed = 1.3 + Math.random()*2.6; // 1.3..3.9 px/кадр
+      const speed = 1.3 + Math.random()*2.6; // быстрый разлёт
       sparks.push({ x: cx, y: cy, vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed, life: 1 });
     }
-
     const start = performance.now();
     let raf = 0;
     const loop = (t:number) => {
-      const k = clamp((t - start) / SPARKS_MS);
+      const k = Math.max(0, Math.min(1, (t - start) / SPARKS_MS));
       ctx.clearRect(0,0,W,H);
       for (const s of sparks){
-        s.vx *= 0.985; s.vy *= 0.985;
-        s.x += s.vx;   s.y += s.vy;
+        s.vx *= 0.985; s.vy *= 0.985; s.x += s.vx; s.y += s.vy;
         s.life = 1 - k;
         const a = Math.max(0, Math.min(1, s.life));
         ctx.fillStyle = `rgba(255,213,74,${a})`;
@@ -295,7 +209,7 @@ function Sparks({ active }: { active: boolean }) {
   );
 }
 
-/* ===================== ОСНОВНОЙ КОМПОНЕНТ ===================== */
+/* ===================== основной компонент ===================== */
 
 export const D20Overlay: React.FC<D20OverlayProps> = ({
   spinFrames,
@@ -305,6 +219,8 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
   durationMs = SPIN_MS,
   onDone,
 }) => {
+  const sfx = useSfx();
+
   const allSrcs = useMemo(() => [...spinFrames, resultFrameDefault, resultFrameSpecial], [spinFrames, resultFrameDefault, resultFrameSpecial]);
   const ready = usePreloadImages(allSrcs);
 
@@ -318,16 +234,17 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
   const [sparksActive, setSparksActive] = useState(false);
 
   const numberCanvasRef = useRef<HTMLCanvasElement>(null);
-  const audio = useAudio();
 
-  // Старт: фиолетовая вспышка + пульсация + СПИН (+ старт звука спина)
+  // заранее «пинаем» аудио и запускаем прелоад буферов (не блокирует)
+  useEffect(() => { sfx.warmup(); }, []);
+
+  // Старт: фиолетовая вспышка + пульсация + СПИН (+ звук спина)
   useEffect(() => {
     if (!ready) return;
     setShowIntro(true);
     setGlowActive(true);
 
-    // аудио спина
-    audio.startSpin();
+    sfx.startSpin();
 
     const interval = setInterval(() => {
       setFrame(f => (f + 1) % Math.max(1, spinFrames.length));
@@ -335,32 +252,30 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
     const stop = setTimeout(() => { clearInterval(interval); setPhase("flash"); }, durationMs);
     const hideIntro = setTimeout(() => setShowIntro(false), INTRO_EXPAND_MS + INTRO_FADE_MS);
 
-    return () => { clearInterval(interval); clearTimeout(stop); clearTimeout(hideIntro); audio.stopSpin(); };
+    return () => { clearInterval(interval); clearTimeout(stop); clearTimeout(hideIntro); sfx.stopSpin(); };
   }, [ready, durationMs, spinFrames.length]);
 
-  // ВТОРАЯ (золотая) вспышка: цифра — сразу под ней; звук результата — в этот момент; искры — ТОЛЬКО при 20
+  // Вторая (золотая) вспышка: цифра — сразу под ней; звук результата — в этот момент; искры — только при 20
   useEffect(() => {
     if (phase !== "flash") return;
 
-    // прекратить звук спина (на всякий случай)
-    audio.stopSpin();
+    sfx.stopSpin();
 
-    // ассет результата
     setResultSrc(SPECIAL_SET.has(value) ? resultFrameSpecial : resultFrameDefault);
 
-    // отрисовать белую цифру заранее (под маской)
+    // белое число сразу (под вспышкой)
     const c = numberCanvasRef.current;
     if (c) { const ctx = c.getContext("2d"); if (ctx) drawPixelNumber(ctx, value, "#FFFFFF"); }
 
-    // звук результата — в момент вспышки
+    // звук результата
     const kind = value === 20 ? "crit" : (value === 1 ? "fail" : "normal");
-    audio.resultSound(kind as any);
+    sfx.resultSound(kind as any);
 
     // вспышка
     setShowGoldFlash(true);
 
     // искры только при 20
-    if (value === 20) setSparksActive(true);
+    setSparksActive(value === 20);
 
     // снять вспышку → reveal; искры живут дольше и сами погаснут
     const hide = setTimeout(() => {
@@ -371,7 +286,7 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
       const start = performance.now();
       const gold = { r: 255, g: 213, b: 74 };
       const tintLoop = (t: number) => {
-        const k = clamp((t - start) / TINT_MS);
+        const k = Math.max(0, Math.min(1, (t - start) / TINT_MS));
         const r = Math.round(lerp(255, gold.r, k));
         const g = Math.round(lerp(255, gold.g, k));
         const b = Math.round(lerp(255, gold.b, k));
@@ -396,7 +311,7 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
     return () => clearTimeout(hold);
   }, [phase]);
 
-  // Финальное исчезновение
+  // Финальный fade
   useEffect(() => {
     if (phase !== "fade") return;
     const t = setTimeout(() => { setPhase("done"); onDone?.(); }, FADE_MS);
@@ -412,6 +327,7 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
       style={{ opacity: containerOpacity, transition: `opacity ${FADE_MS}ms ease` }}
+      onPointerDown={() => { /* на всякий случай «будим» аудио контекст кликом */ sfx.warmup(); }}
     >
       <div className="relative" style={{ width: 128, height: 128, imageRendering: "pixelated" as const }}>
         {/* Фон-пульсация */}
