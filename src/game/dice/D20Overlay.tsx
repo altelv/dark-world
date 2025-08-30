@@ -86,4 +86,123 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
   spinFrames,
   resultFrameDefault,
   resultFrameSpecial,
-  valu
+  value,
+  durationMs = 2000, // по твоему запросу — 2 секунды
+  onDone,
+}) => {
+  const [phase, setPhase] = useState<Phase>("spin");
+  const [frame, setFrame] = useState(0);
+  const [resultSrc, setResultSrc] = useState(resultFrameDefault);
+  const [flashVisible, setFlashVisible] = useState(false);
+  const numberCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ── СПИН: интервал 60мс, суммарно durationMs
+  useEffect(() => {
+    if (phase !== "spin") return;
+    const interval = setInterval(() => {
+      setFrame(f => (f + 1) % Math.max(1, spinFrames.length));
+    }, 60);
+    const stop = setTimeout(() => {
+      clearInterval(interval);
+      setPhase("flash");
+    }, durationMs);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(stop);
+    };
+  }, [phase, durationMs, spinFrames.length]);
+
+  // ── FLASH: сразу подменяем ассет на результат и рисуем число ПОД вспышкой
+  useEffect(() => {
+    if (phase !== "flash") return;
+    setResultSrc(SPECIAL_SET.has(value) ? resultFrameSpecial : resultFrameDefault);
+
+    // рисуем белое число, которое позже «позолотеет»
+    const c = numberCanvasRef.current;
+    if (c) {
+      const ctx = c.getContext("2d");
+      if (ctx) drawPixelNumber(ctx, value, "#FFFFFF");
+    }
+
+    // показать маску и спрятать смену ассета/цифры
+    setFlashVisible(true);
+    const hide = setTimeout(() => {
+      setFlashVisible(false);
+      setPhase("reveal");
+    }, 220); // длительность вспышки
+    return () => clearTimeout(hide);
+  }, [phase, value, resultFrameDefault, resultFrameSpecial]);
+
+  // ── REVEAL: держим секунду и уходим в gold
+  useEffect(() => {
+    if (phase !== "reveal") return;
+    const t = setTimeout(() => setPhase("gold"), 1000);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  // ── GOLD: перекрашиваем число и добавляем свечение
+  useEffect(() => {
+    if (phase !== "gold") return;
+    const c = numberCanvasRef.current;
+    if (c) {
+      const ctx = c.getContext("2d");
+      if (ctx) drawPixelNumber(ctx, value, "#FFD54A"); // золотистая
+    }
+    const t = setTimeout(() => setPhase("fade"), 600);
+    return () => clearTimeout(t);
+  }, [phase, value]);
+
+  // ── FADE: исчезаем и завершаем
+  useEffect(() => {
+    if (phase !== "fade") return;
+    const t = setTimeout(() => { setPhase("done"); onDone?.(); }, 450);
+    return () => clearTimeout(t);
+  }, [phase, onDone]);
+
+  const spinSrc = useMemo(() => spinFrames[frame % Math.max(1, spinFrames.length)], [frame, spinFrames]);
+
+  // масштаб цифры: 16*4=64, нужно меньше на 5px ⇒ 59/16 = 3.6875
+  const NUMBER_SCALE = 3.6875;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+      style={{
+        opacity: phase === "fade" || phase === "done" ? 0 : 1,
+        transition: "opacity 450ms ease",
+      }}
+    >
+      <div className="relative" style={{ width: 128, height: 128, imageRendering: "pixelated" as const }}>
+        {/* base image */}
+        {phase === "spin" && <img src={spinSrc} width={128} height={128} alt="d20 spinning" />}
+        {phase !== "spin" && <img src={resultSrc} width={128} height={128} alt="d20 result" />}
+
+        {/* ВСПЫШКА-МАСКА: больше ассета, мягкие края, жёсткий центр 20×20 */}
+        <div
+          style={{
+            opacity: flashVisible ? 1 : 0,
+            transition: "opacity 220ms ease-out",
+          }}
+        >
+          <FlashMask visible={flashVisible} lifetimeMs={220} />
+        </div>
+
+        {/* 16×16 число, центр на 6px ниже, меньше на 5px и со свечением в GOLD */}
+        {phase !== "spin" && (
+          <canvas
+            ref={numberCanvasRef}
+            width={16}
+            height={16}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2"
+            style={{
+              transform: `translate(-50%, calc(-50% + 6px)) scale(${NUMBER_SCALE})`,
+              imageRendering: "pixelated" as const,
+              filter: phase === "gold" ? "drop-shadow(0 0 6px rgba(255,215,0,0.9))" : "none",
+              transition: "filter 250ms ease",
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
