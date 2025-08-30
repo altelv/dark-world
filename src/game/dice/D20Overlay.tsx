@@ -2,15 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { drawPixelNumber } from "./PixelDigits";
 
 /**
- * Новые правки:
- * - Старт с фиолетовой вспышки (#661d87) над всем: быстрый «раздув» 0.12с + мягкий уход.
- * - Пульсация фона стартует одновременно со спином (а не раньше).
- * - Спин 3.0с, кадр каждые 60мс, с прелоадом спрайтов.
- * - Золотая круглая вспышка (256×256, мягкие края), центр R=30px.
- * - Цифра появляется ОДНОВРЕМЕННО с золотой вспышкой (под ней по слоям), затем плавно золотится 900мс.
- * - Пауза результата длиннее, общее исчезновение дольше.
- * - Цифра смещена на +2px вправо, на 6px вниз, и на ~3px меньше (масштаб 3.5 → ~56px).
- * - Пиксельные «искры» при золотой вспышке: разлетаются из центра, замедляются, гаснут позже вспышки.
+ * Текущее поведение:
+ * - Старт: фиолетовая вспышка (0.12с раздув + 0.28с уход), одновременно включаются спин и пульсация.
+ * - Спин: 3.0с, кадр каждые 60мс, с прелоадом.
+ * - Золотая вспышка (уменьшенный внешний радиус −15%): «миг» 0.18с.
+ * - Цифра появляется одновременно со вспышкой (под ней), смещена +2px вправо, +6px вниз, масштаб ~56px.
+ * - Искры: больше штук, быстрее старт, меньше затухание на кадр → летят дальше; живут дольше вспышки.
+ * - Цифра плавно золотится 0.9с; пауза результата 2.6с; общий fade 1.7с.
  */
 
 export interface D20OverlayProps {
@@ -29,13 +27,13 @@ type Phase = "spin" | "flash" | "reveal" | "fade" | "done";
 // Тайминги
 const INTRO_EXPAND_MS = 120;      // фиолетовая стартовая вспышка — раздувание
 const INTRO_FADE_MS   = 280;      // и уход
-const SPIN_MS         = 3000;     // спин (по запросу)
-const FLASH_MS        = 180;      // золотая вспышка — «миг» чуть дольше
-const REVEAL_HOLD_MS  = 2600;     // пауза после результата — длиннее
+const SPIN_MS         = 3000;     // спин
+const FLASH_MS        = 180;      // золотая вспышка — «миг»
+const REVEAL_HOLD_MS  = 2600;     // пауза после результата
 const TINT_MS         = 900;      // белый → золото
-const FADE_MS         = 1700;     // финальное исчезновение — дольше
-const PULSE_MS        = 2600;     // более медленная пульсация
-const SPARKS_MS       = 1100;     // искры живут дольше вспышки
+const FADE_MS         = 1700;     // финальное исчезновение
+const PULSE_MS        = 2600;     // пульсация
+const SPARKS_MS       = 1600;     // искры живут дольше вспышки
 
 // Утилиты
 function clamp(t: number, lo = 0, hi = 1) { return Math.max(lo, Math.min(hi, t)); }
@@ -63,6 +61,7 @@ function usePreloadImages(srcs: string[]) {
 }
 
 // Круглая золотая вспышка (маска 256×256, центр смещён +6px по Y)
+// Внешний радиус уменьшен на 15% (128 → ~109)
 function CircularGoldFlash({ show }: { show: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -70,8 +69,9 @@ function CircularGoldFlash({ show }: { show: boolean }) {
     const W = 256, H = 256;
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     const cx = W / 2; const cy = H / 2 + 6; // центр ниже на 6px
-    const inner = 30;   // R=30px — жёсткий центр
-    const outer = 128;  // мягкий фейд до краёв
+    const inner = 30;                        // R=30px — жёсткий центр
+    const outerBase = 128;
+    const outer = Math.round(outerBase * 0.85); // −15% по запросу
     const gold = { r: 255, g: 213, b: 74 };
 
     const img = ctx.createImageData(W, H);
@@ -109,7 +109,7 @@ function CircularGoldFlash({ show }: { show: boolean }) {
   );
 }
 
-// Пиксельные искры (канвас 256×256, «пиксельный» стиль)
+// Пиксельные искры (канвас 256×256)
 function Sparks({ active }: { active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -120,38 +120,43 @@ function Sparks({ active }: { active: boolean }) {
 
     const W = 256, H = 256;
     const cx = W / 2, cy = H / 2 + 6;
-    const N = 26; // количество искр
+
+    // БОЛЬШЕ искр, БЫСТРЕЕ старт, МЕНЬШЕ затухание скорости — ЛЕТЯТ ДАЛЬШЕ
+    const N = 42; // было 26
     type S = { x:number; y:number; vx:number; vy:number; life:number; };
     const sparks: S[] = [];
     for (let i=0;i<N;i++){
       const ang = Math.random() * Math.PI * 2;
-      const speed = 0.6 + Math.random()*1.6; // px/кадр старт
+      const speed = 1.3 + Math.random()*2.6; // было 0.6..2.2 → теперь 1.3..3.9 px/кадр
       sparks.push({
         x: cx, y: cy,
         vx: Math.cos(ang)*speed,
         vy: Math.sin(ang)*speed,
-        life: 1, // 1..0
+        life: 1,
       });
     }
+
     const start = performance.now();
     let raf = 0;
     const loop = (t:number) => {
       const dt = t - start;
       const k = clamp(dt / SPARKS_MS);
-      // clear
-      ctx.clearRect(0,0,W,H);
-      // update/draw
-      for (const s of sparks){
-        // замедление
-        s.vx *= 0.96; s.vy *= 0.96;
-        s.x += s.vx;  s.y += s.vy;
-        s.life = 1 - k*k; // быстрее гаснет к концу
 
-        // «пиксель» 2×2
+      ctx.clearRect(0,0,W,H);
+
+      for (const s of sparks){
+        // более мягкое торможение (было 0.96) → дальше улетают
+        s.vx *= 0.985; s.vy *= 0.985;
+        s.x += s.vx;   s.y += s.vy;
+
+        // яркость гаснет медленно и равномерно
+        s.life = 1 - k;
+
         const a = Math.max(0, Math.min(1, s.life));
         ctx.fillStyle = `rgba(255,213,74,${a})`;
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       }
+
       if (k < 1) raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -267,20 +272,19 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
     return () => { clearInterval(interval); clearTimeout(stop); clearTimeout(hideIntro); };
   }, [ready, durationMs, spinFrames.length]);
 
-  // GOLD FLASH: одновременно показываем цифру ПОД вспышкой
+  // GOLD FLASH: цифра появляется сразу под маской, вспышка и искры стартуют вместе
   useEffect(() => {
     if (phase !== "flash") return;
     setResultSrc(SPECIAL_SET.has(value) ? resultFrameSpecial : resultFrameDefault);
 
-    // рисуем белое число сразу (под вспышкой)
+    // белое число сразу (под вспышкой)
     const c = numberCanvasRef.current;
     if (c) { const ctx = c.getContext("2d"); if (ctx) drawPixelNumber(ctx, value, "#FFFFFF"); }
 
-    // включаем вспышку и искры
     setShowGoldFlash(true);
     setSparksActive(true);
 
-    // убираем вспышку → в reveal; искры живут дольше автоматом
+    // убрать вспышку → reveal; искры живут дольше
     const hide = setTimeout(() => {
       setShowGoldFlash(false);
       setPhase("reveal");
@@ -301,7 +305,6 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
       requestAnimationFrame(tintLoop);
     }, FLASH_MS);
 
-    // искры сами погаснут через SPARKS_MS; выключать слой не обязательно
     const stopSparks = setTimeout(() => setSparksActive(false), SPARKS_MS);
 
     return () => { clearTimeout(hide); clearTimeout(stopSparks); };
@@ -323,10 +326,9 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
 
   const spinSrc = useMemo(() => spinFrames[frame % Math.max(1, spinFrames.length)], [frame, spinFrames]);
 
-  // Масштаб цифры: 16*4=64 → нужно ~56px → 56/16 = 3.5
+  // Масштаб цифры: ~56px → 56/16 = 3.5
   const NUMBER_SCALE = 3.5;
 
-  // общий fade контейнера
   const containerOpacity = (phase === "fade" || phase === "done") ? 0 : 1;
 
   return (
@@ -335,17 +337,17 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
       style={{ opacity: containerOpacity, transition: `opacity ${FADE_MS}ms ease` }}
     >
       <div className="relative" style={{ width: 128, height: 128, imageRendering: "pixelated" as const }}>
-        {/* Фон-пульсация (синхронно со спином) */}
+        {/* Фон-пульсация */}
         <BackgroundGlow active={glowActive} phase={phase} />
 
         {/* База: спин или результат */}
         {ready && phase === "spin" && <img src={spinSrc} width={128} height={128} alt="d20 spinning" draggable={false} />}
         {ready && phase !== "spin" && <img src={resultSrc} width={128} height={128} alt="d20 result" draggable={false} />}
 
-        {/* Искры (живут дольше вспышки) */}
+        {/* Искры */}
         {sparksActive && <Sparks active={sparksActive} />}
 
-        {/* Золотая вспышка: сверху; раздувание + fade */}
+        {/* Золотая вспышка */}
         <div
           style={{
             opacity: showGoldFlash ? 1 : 0,
@@ -366,7 +368,7 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
             height={16}
             className="absolute left-1/2 top-1/2"
             style={{
-              transform: `translate(calc(-50% + 2px), calc(-50% + 6px)) scale(${NUMBER_SCALE})`,
+              transform: `translate(calc(-50% + 2px), calc(-50% + 6px)) scale(3.5)`,
               imageRendering: "pixelated" as const,
               filter: phase === "reveal" ? "drop-shadow(0 0 6px rgba(255,215,0,0.85))" : "none",
               transition: "filter 250ms ease",
@@ -374,7 +376,7 @@ export const D20Overlay: React.FC<D20OverlayProps> = ({
           />
         )}
 
-        {/* Фиолетовая стартовая вспышка — самый верхний слой при старте */}
+        {/* Фиолетовая стартовая вспышка — верхний слой при старте */}
         <IntroPurpleFlash show={showIntro} />
       </div>
     </div>
