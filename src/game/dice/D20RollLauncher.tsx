@@ -30,10 +30,8 @@ export const D20RollLauncher: React.FC<D20RollLauncherProps> = ({
     setValue(res.d20Raw);
 
     // Общая длительность под новые тайминги:
-    // 120 (intro expand) + 280 (intro fade) — параллельно со спином, спин 3000;
-    // + 320 (gold flash) + 2200 (reveal hold) + 1400 (fade) + 150 запас.
-    // Берём спин как доминирующий (3s), остальное последовательно: 3000 + 320 + 2200 + 1400 + 150 = 7070ms
-    const totalMs = 3000 + 320 + 2200 + 1400 + 150;
+    // спин 3000 + gold flash 180 + reveal hold 2600 + fade 1700 + запас 150 = 7630мс
+    const totalMs = 3000 + 180 + 2600 + 1700 + 150;
     const timer = setTimeout(() => {
       onResolved(res);
       setPending(false);
