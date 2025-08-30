@@ -25,12 +25,12 @@ export const D20RollLauncher: React.FC<D20RollLauncherProps> = ({
   const start = () => {
     if (pending) return;
     setPending(true);
-    setOverlayKey(k => k + 1); // гарантированно новый оверлей
+    setOverlayKey(k => k + 1); // новый оверлей на каждый бросок
     const res = resolveRoll(char, request);
     setValue(res.d20Raw);
 
-    // финал (после полного цикла оверлея)
-    const totalMs = 1500 /*spin*/ + 180 /*flash*/ + 1200 /*reveal*/ + 600 /*gold*/ + 450 /*fade*/ + 50;
+    // суммарная длительность: 2000 (spin) + 220 (flash) + 1000 (reveal hold) + 600 (gold) + 450 (fade) + 50 запас
+    const totalMs = 2000 + 220 + 1000 + 600 + 450 + 50;
     const timer = setTimeout(() => {
       onResolved(res);
       setPending(false);
@@ -66,6 +66,7 @@ export const D20RollLauncher: React.FC<D20RollLauncherProps> = ({
           resultFrameDefault={resultDefault}
           resultFrameSpecial={resultSpecial}
           value={value}
+          durationMs={2000}
           onDone={() => {/* overlay finished */}}
         />
       )}
