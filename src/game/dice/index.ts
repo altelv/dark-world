@@ -1,18 +1,18 @@
 // src/game/dice/index.ts
-// Надёжный баррель для модуля D20. Все экспорты именованные и явные.
+// Надёжный баррель: явные именованные экспорты + дубль через промежуточную константу (чтобы rollup не терял).
 
-export { D20Overlay } from "./D20Overlay";
-export type { D20OverlayProps } from "./D20Overlay";
+import { D20Overlay as _D20Overlay } from "./D20Overlay";
+import { D20RollLauncher as _D20RollLauncher } from "./D20RollLauncher";
+import { resolveRoll as _resolveRoll } from "./D20RollService";
 
-export { D20RollLauncher } from "./D20RollLauncher";
-export type { D20RollLauncherProps } from "./D20RollLauncher";
+export const D20Overlay = _D20Overlay;
+export const D20RollLauncher = _D20RollLauncher;
+export const resolveRoll = _resolveRoll;
 
-export { resolveRoll } from "./D20RollService";
-
-// Пробрасываем типы состояния/ролла наружу для удобства импорта из "game/dice"
+// Типы наружу
 export type { RollRequest, RollResolution, CharacterState } from "../state/types";
 
-// (опционально) Стандартные пути к ассетам, если хочешь импортировать «пакетом»
+// Пакет путей к ассетам (опционально)
 export const D20_ASSET_PATHS = {
   spinFrames: [
     "/assets/d20/spin_1.png",
@@ -23,3 +23,8 @@ export const D20_ASSET_PATHS = {
   resultDefault: "/assets/d20/result_default.png",
   resultSpecial: "/assets/d20/result_special.png",
 };
+
+// Дополнительно (не обязательно), но пусть будет:
+export * from "./D20RollLauncher";
+export * from "./D20Overlay";
+export * from "./D20RollService";
