@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { LeftPanelCharacter } from "./components/LeftPanelCharacter";
-import { D20RollLauncher } from "./game/dice";
+import { D20RollLauncher } from "./game/dice/D20RollLauncher";
 import { seedCharacter } from "./game/examples/seedCharacter";
 import type { RollRequest, RollResolution } from "./game/state/types";
 
