@@ -1,45 +1,45 @@
-import type { Gender } from "../rules/gender";
-import type { Race } from "../rules/race";
-import type { SkillId } from "../rules/skills";
-import type { Perk } from "../rules/perks";
+export type SkillName =
+  | 'Боевая подготовка' | 'Защита' | 'Тактика' | 'Выносливость' | 'Физическая подготовка' | 'Акробатика' | 'Ремесло'
+  | 'Скрытность' | 'Поиск' | 'Выживание' | 'Ловкость рук' | 'Манипуляция и Торговля' | 'Интуиция' | 'Выступление'
+  | 'Магия' | 'Магическое чутьё' | 'Концентрация' | 'Наука' | 'История' | 'Природа' | 'Медицина'
 
-export interface SkillState {
-  level: number;          // allocated 0..20 (no progression in-game)
-  levelBuff?: number;     // temporary +levels (items/potions/spells)
+export type Skills = Record<SkillName, number>
+
+export type Character = {
+  name: string
+  race: string
+  class: string
+  gender: 'Мужчина'|'Женщина'|'Другое'
+  hp: number
+  luck: number
+  fatigue: number
+  skills: Partial<Skills>
+  tempBuffs?: Partial<Record<SkillName, number>>
+  perks: string[]
+  perkMaster?: SkillName | null
+  perkSpecial?: SkillName | null
 }
 
-export type SkillsMap = Partial<Record<SkillId, SkillState>>;
-
-export interface CharacterState {
-  name: string;
-  race: Race;
-  className: string;
-  gender: Gender;
-  age: number;
-  perks: Perk[]; // must be distinct skills
-  weakness?: string;
-  background?: string;
-  hpBase: number; // default 10
-  hpCurrent: number;
-  fatigue: number; // 0..20
-  luck: number;    // 0..20
-  skills: SkillsMap;
+export type RollRequest = {
+  skill: SkillName | string
+  dc: number
+  luck: number
+  fatigue: number
+  inventiveness: number
+  mode: 'Бой'|'Сюжет'
 }
 
-export interface RollRequest {
-  skill: SkillId;
-  dc: number;
-  ingenuity: number; // 0..4
-  situational?: number; // GM situational mod, can be negative/positive
-}
-
-export type CritFlag = "none" | "critSuccess" | "critFail";
-
-export interface RollResolution {
-  requestId: string;
-  d20Raw: number;
-  total: number;
-  dc: number;
-  success: boolean;
-  crit: CritFlag;
+export type RollResolution = {
+  d20: number
+  total: number
+  success: boolean
+  detail: {
+    luckUsed: number
+    fatiguePenalty: number
+    inventiveness: number
+    masteryBonus: number
+    skillLevel: number
+    skillName: string
+    dc: number
+  }
 }

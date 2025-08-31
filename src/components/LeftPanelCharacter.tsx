@@ -1,79 +1,97 @@
-import React, { useMemo } from "react";
-import type { CharacterState } from "../game/state/types";
-import { masteryBonus, effectiveLevel } from "../game/rules/mastery";
+import React, { useMemo, useState } from 'react'
+import type { Character } from '@/game/state/types'
+import { genderBonuses } from '@/game/state/gender'
+import { classPresets } from '@/game/state/classPresets'
+import { masteryBonus } from '@/game/state/rules'
+import { allSkills } from '@/game/state/skills'
 
-interface Props { char: CharacterState; portraitUrl?: string; }
+type Props = { character: Character, onChange:(c:Character)=>void, mode:'Бой'|'Сюжет' }
 
-export const LeftPanelCharacter: React.FC<Props> = ({ char, portraitUrl }) => {
-  const masteryBySkill = useMemo(() => {
-    const m: Record<string, number> = {};
-    Object.entries(char.skills).forEach(([skill, st]) => {
-      const eff = effectiveLevel({ baseLevel: st.level, levelBuff: st.levelBuff || 0 });
-      m[skill] = masteryBonus(eff);
-    });
-    return m;
-  }, [char.skills]);
+export function LeftPanelCharacter({ character, onChange }: Props){
+  const [freePoints, setFreePoints] = useState(0)
 
-  const hpMax = char.hpBase + (masteryBySkill["Endurance"] || 0) + (masteryBySkill["Medicine"] || 0) + (masteryBySkill["Athletics"] || 0);
+  function applyClass(name:string){
+    const preset = classPresets[name]
+    if(!preset) return
+    const base = {...character}
+    base.class = name
+    base.skills = {...base.skills}
+    Object.keys(base.skills).forEach(k => base.skills[k]=0)
+    for(const k in preset){ base.skills[k] = preset[k] }
+    onChange(base)
+  }
+  function addPoint(skill:string){
+    if(freePoints<=0) return
+    const c = {...character, skills: {...character.skills}}
+    c.skills[skill] = Math.min(20, (c.skills[skill]||0)+1)
+    setFreePoints(p=>p-1)
+    onChange(c)
+  }
+
+  const pollinationsPrompt = useMemo(()=>{
+    const list = Object.entries(character.skills).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k).join(', ')
+    return `Create a Pixel art Dark fantasy character. cinematic composition. muted dark palette with bold highlights, Epic scale, haunting, surreal, inspired by dark fantasy painters and modern grimdark art 8 bit. Character: ${character.race}, ${character.class}, ${character.gender}, perks: ${character.perks.join('; ')}, top skills: ${list}`
+  }, [character])
 
   return (
-    <aside className="h-screen w-full p-3 flex flex-col gap-3 bg-zinc-950 text-zinc-200">
-      <div className="flex items-center gap-3">
-        <div className="w-16 h-16 bg-zinc-800 rounded-xl overflow-hidden">
-          {portraitUrl ? <img src={portraitUrl} alt="portrait" className="w-full h-full object-cover"/> : null}
-        </div>
-        <div className="flex-1">
-          <div className="text-lg font-semibold">{char.name} <span className="text-xs opacity-70">({char.gender})</span></div>
-          <div className="text-xs opacity-70">{char.race} • {char.className} • {char.age} лет</div>
-        </div>
+    <div className="left-section">
+      <div className="avatar">
+        {/* Можно заменить на реальный рендер Pollinations */}
+        Автарка генерится Pollinations<br/> 
+        <span className="small">prompt:</span><br/>
+        <span style={{color:'#a88be0'}}>{pollinationsPrompt.slice(0,120)}...</span>
       </div>
 
-      {/* Bars */}
       <div>
-        <Bar label="Здоровье" value={char.hpCurrent} max={hpMax} color="bg-red-600"/>
-        <Bar label="Усталость" value={char.fatigue} max={20} color="bg-sky-600"/>
-        <Bar label="Удача" value={char.luck} max={20} color="bg-amber-500"/>
-      </div>
-
-      {/* Perks / Weakness / Background */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <InfoCard title="Перк мастера">{char.perks.find(p=>p.type==="Master")?.skill || "—"}</InfoCard>
-        <InfoCard title="Перк специалиста">{char.perks.find(p=>p.type==="Specialist")?.skill || "—"}</InfoCard>
-        <InfoCard title="Слабость">{char.weakness || "—"}</InfoCard>
-        <InfoCard title="Бэкграунд" wide>{char.background || "—"}</InfoCard>
-      </div>
-
-      {/* Skills list (compact) */}
-      <div className="mt-2 flex-1 overflow-auto">
-        <div className="text-sm font-semibold mb-1">Навыки</div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {Object.entries(char.skills).map(([name, st]) => (
-            <div key={name} className="rounded-lg bg-zinc-900 p-2 border border-zinc-800">
-              <div className="font-medium truncate">{name}</div>
-              <div className="opacity-70">ур.: {st.level}{st.levelBuff?` (+${st.levelBuff})`:""} • маст.: +{masteryBySkill[name] || 0}</div>
-            </div>
-          ))}
+        <div className="row">
+          <div className="tag">Имя: <b>{character.name}</b></div>
+          <div className="tag">Пол: <b>{character.gender}</b></div>
+          <div className="tag">Раса: <b>{character.race}</b></div>
+          <div className="tag">Класс: <b>{character.class}</b></div>
+        </div>
+        <div className="row" style={{marginTop:6}}>
+          <div className="tag">HP: <b>{character.hp}</b></div>
+          <div className="tag">Удача: <b>{character.luck}/20</b></div>
+          <div className="tag">Усталость: <b>{character.fatigue}/20</b></div>
+          <div className="tag">Своб. очки навыков: <b>{freePoints}</b></div>
         </div>
       </div>
-    </aside>
-  );
-};
 
-const Bar: React.FC<{label: string; value: number; max: number; color: string;}> = ({ label, value, max, color }) => {
-  const pct = Math.max(0, Math.min(100, (value / max) * 100));
-  return (
-    <div className="mb-2">
-      <div className="flex justify-between text-xs mb-1"><span>{label}</span><span>{value}/{max}</span></div>
-      <div className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden">
-        <div className={`h-full ${color}`} style={{ width: `${pct}%` }}/>
+      <div>
+        <div className="row" style={{marginBottom:8}}>
+          <select onChange={e=>applyClass(e.target.value)} defaultValue="">
+            <option value="" disabled>Выбрать архетип (раздаёт 36 очков)</option>
+            {Object.keys(classPresets).map(k=> <option key={k} value={k}>{k}</option>)}
+          </select>
+          <button className="btn" onClick={()=>setFreePoints(p=>p+1)}>+1 очко</button>
+        </div>
+
+        <div className="skills-list" style={{marginBottom:6, fontSize:12, opacity:.8}}>
+          <div>Навык</div><div>Уровень</div><div></div><div>Бонус</div>
+        </div>
+        <div style={{maxHeight: 340, overflow:'auto', border:'1px solid #2a2236', borderRadius:8}}>
+          {allSkills.map(sk=>{
+            const lvl = character.skills[sk] || 0
+            const bonus = masteryBonus(lvl)
+            const buffed = character.tempBuffs?.[sk] && character.tempBuffs[sk]!>0
+            return (
+              <div key={sk} className="skills-list skill-row">
+                <div className={"skill-name "+(buffed?'gold':'')}>{sk}</div>
+                <div>{lvl}</div>
+                <button className="skill-plus" disabled={freePoints<=0} onClick={()=>addPoint(sk)}>+</button>
+                <div className="skill-bonus">{bonus>=0?`+${bonus}`:bonus}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="row"><div className="tag">Перк Мастер: <b>{character.perkMaster||'нет'}</b></div><div className="tag">Перк Спец: <b>{character.perkSpecial||'нет'}</b></div></div>
+        <div className="row" style={{marginTop:6}}>
+          <div className="tag">Лицензии: <b>{character.perks.join(', ')||'—'}</b></div>
+        </div>
       </div>
     </div>
-  );
-};
-
-const InfoCard: React.FC<{title: string; wide?: boolean; children: React.ReactNode}> = ({ title, wide, children }) => (
-  <div className={`${wide?"col-span-2":""} rounded-lg bg-zinc-900 p-2 border border-zinc-800`}>
-    <div className="text-[11px] opacity-70 mb-1">{title}</div>
-    <div>{children}</div>
-  </div>
-);
+  )
+}
