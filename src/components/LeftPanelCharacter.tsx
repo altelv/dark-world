@@ -125,7 +125,7 @@ export function LeftPanelCharacter({ character, onChange }: Props){
         <div className="skills-grid" style={{marginBottom:6,fontSize:12,opacity:.8}}>
           <div>Навык</div><div>Уровень/Кэп</div><div></div><div>Бонус</div>
         </div>
-        <div style={{maxHeight: 340, overflow:'auto', border:'1px solid #2a2236', borderRadius:8}}>
+        <div style={{border:'1px solid var(--stroke)', borderRadius:8}}>
           {allSkills.map(sk=>{
             const raw = character.skills[sk] || 0
             const cap = skillCapFor(character, sk)

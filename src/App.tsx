@@ -18,6 +18,8 @@ export default function App(){
 
   return (
     <div className="app-grid">
+      <div className="col-marker" aria-hidden><span></span><span></span><span></span></div>
+
       <div className="panel">
         <div className="panel-header">Персонаж</div>
         <div className="panel-body">
