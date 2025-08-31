@@ -1,0 +1,2294 @@
+{
+  "version": "0.3",
+  "updated": "2025-08-31",
+  "notes": "Скрытые автоматические проверки по каждому навыку. ДМ объявляет успех («<Название> — успех!») и подсвечивает результат. Провал — молча.",
+  "global_rules": {
+    "synergy": "Если уместно, кинуть 2 навыка и взять лучший результат.",
+    "combat_dc_mode": "rank",
+    "exploration_social_dc_mode": "relative",
+    "dc_relative_baseline": "ДМ выбирает уместную сложность сцены; offset в чекe смещает её.",
+    "announce_format": "<Название проверки> — успех!",
+    "highlight_style": "жёлтым"
+  },
+  "skills": [
+    {
+      "skill": "Боевая подготовка",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "combat_training_ambush_kill",
+          "title": "Подловить врага",
+          "context": "combat",
+          "trigger": "Начало боя, ближний бой, по небоссам.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Один удар — и враг падает мёртвым.",
+          "effect_note": "Мгновенное убийство в стартовой фазе; не на боссах; повышенный базовый DC.",
+          "synergy": [
+            "Скрытность",
+            "Тактика"
+          ],
+          "frequency": "once_per_scene",
+          "tags": [
+            "alpha_strike",
+            "melee"
+          ]
+        },
+        {
+          "id": "combat_training_extra_attack",
+          "title": "Окно возможности",
+          "context": "combat",
+          "trigger": "Первая атака попала — проверить шанс на ещё одну атаку сейчас.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ты видишь окно — нанесён дополнительный удар.",
+          "effect_note": "+1 дополнительная атака в текущем ходу.",
+          "synergy": [
+            "Тактика"
+          ],
+          "frequency": "each_round",
+          "tags": [
+            "tempo"
+          ]
+        },
+        {
+          "id": "combat_training_bad_position",
+          "title": "Невыгодная позиция противника",
+          "context": "combat",
+          "trigger": "Наблюдение за стойкой/локацией врага.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Замечен просчёт — следующий бросок атаки получает бонус.",
+          "effect_note": "+2 к следующей атаке по этой цели.",
+          "synergy": [
+            "Поиск",
+            "Тактика"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "advantage"
+          ]
+        },
+        {
+          "id": "combat_training_wrong_weapon",
+          "title": "Неподходящее оружие",
+          "context": "combat",
+          "trigger": "Контакт с новой бронёй/типом врага.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Текущая тактика малоэффективна — лучше сменить подход.",
+          "effect_note": "ДМ даёт подсказку: тип оружия/урона неэффективен.",
+          "synergy": [
+            "Наука",
+            "История"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "lore"
+          ]
+        },
+        {
+          "id": "combat_training_style_flaw",
+          "title": "Изъян в технике",
+          "context": "combat",
+          "trigger": "После 1–2 обменов ударами.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Замечена повторяющаяся слабость — можно фармить изобретательность.",
+          "effect_note": "Повторное использование слабости даёт бонус изобретательности.",
+          "synergy": [
+            "Тактика"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "pattern"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Защита",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "defense_trap_half",
+          "title": "Привычка защищаться",
+          "context": "exploration",
+          "trigger": "Срабатывает физическая ловушка.",
+          "dc": {
+            "mode": "relative",
+            "offset": 2
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ты успеваешь закрыться — лишь половина урона.",
+          "effect_note": "Снижение урона от ловушки наполовину.",
+          "synergy": [
+            "Акробатика",
+            "Поиск"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "trap"
+          ]
+        },
+        {
+          "id": "defense_read_strike",
+          "title": "Чтение удара",
+          "context": "combat",
+          "trigger": "Атака с явным паттерном (молот, копьё, тяжёлый замах).",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Полностью избегаешь удара.",
+          "effect_note": "Избежать физической атаки целиком.",
+          "synergy": [
+            "Тактика"
+          ],
+          "frequency": "each_round",
+          "tags": [
+            "avoid"
+          ]
+        },
+        {
+          "id": "defense_read_style",
+          "title": "Прочитать технику",
+          "context": "combat",
+          "trigger": "Получил урон или успешно парировал.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Стиль атаки понятен — можно обыграть.",
+          "effect_note": "ДМ выдаёт подсказку для изобретательности.",
+          "synergy": [
+            "Боевая подготовка"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "pattern"
+          ]
+        },
+        {
+          "id": "defense_disarm",
+          "title": "Выбивание оружия",
+          "context": "combat",
+          "trigger": "Контакт на ближней дистанции, у врага оружие в руке.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Оружие выбито — враг теряет точность.",
+          "effect_note": "Враг получает −5 к атакам до поднятия/смены.",
+          "synergy": [
+            "Боевая подготовка",
+            "Ловкость рук"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "control"
+          ]
+        },
+        {
+          "id": "defense_shield_counter",
+          "title": "Щит в обороне",
+          "context": "combat",
+          "trigger": "В руке щит и успешная оборона.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Атакуешь щитом и снимаешь один статус.",
+          "effect_note": "Щитовой удар + снятие 1 статуса с врага.",
+          "synergy": [
+            "Тактика"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "cleanse"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Тактика",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "tactics_position_sense",
+          "title": "Чувство позиции",
+          "context": "any",
+          "trigger": "Оценка местности/расстановки.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Видишь выгодную точку/фланг.",
+          "effect_note": "ДМ отмечает лучшую позицию.",
+          "synergy": [
+            "Поиск",
+            "Выживание"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "position"
+          ]
+        },
+        {
+          "id": "tactics_target_priority",
+          "title": "Приоритет целей",
+          "context": "combat",
+          "trigger": "Начало боя или смена волны.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ясно кого бить первым.",
+          "effect_note": "Бонус изобретательности при следовании приоритету.",
+          "synergy": [
+            "Поиск",
+            "История"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "focus"
+          ]
+        },
+        {
+          "id": "tactics_patrol_route",
+          "title": "Наблюдение за маршрутом",
+          "context": "exploration",
+          "trigger": "Длительное наблюдение за патрулями.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Найдены «слепые пятна».",
+          "effect_note": "Безопасное окно для перемещения.",
+          "synergy": [
+            "Скрытность"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "route"
+          ]
+        },
+        {
+          "id": "tactics_battle_plan",
+          "title": "План боя",
+          "context": "combat",
+          "trigger": "Перед вступлением в бой / первый ход.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "+1 ко всем проверкам до конца боя.",
+          "effect_note": "Групповой бафф.",
+          "synergy": [
+            "Боевая подготовка"
+          ],
+          "frequency": "once_per_scene",
+          "tags": [
+            "buff"
+          ]
+        },
+        {
+          "id": "tactics_read_strategy",
+          "title": "Чтение стратегии",
+          "context": "any",
+          "trigger": "Анализ поведения лидера/врага.",
+          "dc": {
+            "mode": "relative",
+            "offset": 2
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Их план раскрыт — появляется сюжетная возможность.",
+          "effect_note": "Открывает опцию в сцене.",
+          "synergy": [
+            "История",
+            "Наука"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "plot"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Выносливость",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "endurance_long_walk",
+          "title": "Долгий путь",
+          "context": "exploration",
+          "trigger": "После длинного перехода.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Не получаешь усталость.",
+          "effect_note": "−1 усталость или её отсутствие.",
+          "synergy": [
+            "Выживание"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "travel"
+          ]
+        },
+        {
+          "id": "endurance_body_resist",
+          "title": "Стойкость тела",
+          "context": "any",
+          "trigger": "Яд/холод/жара/боль.",
+          "dc": {
+            "mode": "relative",
+            "offset": 2
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Перенёс воздействие без урона.",
+          "effect_note": "Игнор малых средовых эффектов.",
+          "synergy": [
+            "Медицина",
+            "Природа"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "resist"
+          ]
+        },
+        {
+          "id": "endurance_bleed_avoid",
+          "title": "Крепкое тело",
+          "context": "combat",
+          "trigger": "После получения рубящего/колющего урона.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Избегаешь статуса «кровотечение».",
+          "effect_note": "Нет кровотечения.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "status"
+          ]
+        },
+        {
+          "id": "endurance_stun_avoid",
+          "title": "Железная башка",
+          "context": "combat",
+          "trigger": "После оглушающего удара.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Избегаешь оглушения.",
+          "effect_note": "Нет оглушения.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "status"
+          ]
+        },
+        {
+          "id": "endurance_half_damage",
+          "title": "Половина урона",
+          "context": "combat",
+          "trigger": "Сильный урон/крит врага.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Снижаешь урон наполовину.",
+          "effect_note": "Половина урона.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "mitigation"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Физическая подготовка",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "athletics_no_fatigue_after_fight",
+          "title": "Без усталости",
+          "context": "combat",
+          "trigger": "Завершение боя.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Выходишь из боя без усталости.",
+          "effect_note": "Не добавляется усталость за бой.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "recovery"
+          ]
+        },
+        {
+          "id": "athletics_soak",
+          "title": "С больной на здоровую",
+          "context": "combat",
+          "trigger": "Попадание по тебе.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Урон снижен наполовину.",
+          "effect_note": "Половина урона.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "mitigation"
+          ]
+        },
+        {
+          "id": "athletics_power_route",
+          "title": "Дорога силы",
+          "context": "exploration",
+          "trigger": "Проверка препятствий/завалов.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Находишь/создаёшь силовой маршрут.",
+          "effect_note": "Открывает новый путь.",
+          "synergy": [
+            "Ремесло"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "route"
+          ]
+        },
+        {
+          "id": "athletics_stun_opener",
+          "title": "Коронный удар",
+          "context": "combat",
+          "trigger": "Самый старт боя.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Враг оглушён и выведен из боя (допрос позже).",
+          "effect_note": "Контроль одной цели.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "control"
+          ]
+        },
+        {
+          "id": "athletics_luck_instead_fatigue",
+          "title": "Прилив бодрости",
+          "context": "any",
+          "trigger": "Сильная нагрузка.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Вместо +1 усталости получаешь +1 удачу.",
+          "effect_note": "Конверсия усталости в удачу.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "resource"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Акробатика",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "acro_trap_evade",
+          "title": "Избежание ловушки",
+          "context": "exploration",
+          "trigger": "Срабатывает физическая ловушка.",
+          "dc": {
+            "mode": "relative",
+            "offset": 2
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Полностью избегает урона ловушки.",
+          "effect_note": "0 урона.",
+          "synergy": [
+            "Защита"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "trap"
+          ]
+        },
+        {
+          "id": "acro_perfect_dodge",
+          "title": "Идеальный уворот",
+          "context": "combat",
+          "trigger": "Дальнобойная атака (лук/магия) после защиты.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Полностью избегает урона даже при провале защиты.",
+          "effect_note": "«Второй шанс» уклонения.",
+          "synergy": [
+            "Защита"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "avoid"
+          ]
+        },
+        {
+          "id": "acro_route",
+          "title": "Дорога сноровки",
+          "context": "exploration",
+          "trigger": "Исследование сложной архитектуры/щелей.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Обозначен путь только для ловкого.",
+          "effect_note": "Открывает особый маршрут.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "route"
+          ]
+        },
+        {
+          "id": "acro_counter",
+          "title": "Контратака",
+          "context": "combat",
+          "trigger": "Успешное уклонение (не крит-20).",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Совершаешь контратаку.",
+          "effect_note": "Бесплатная атака.",
+          "synergy": [
+            "Боевая подготовка"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "tempo"
+          ]
+        },
+        {
+          "id": "acro_initiative",
+          "title": "Перехват инициативы",
+          "context": "combat",
+          "trigger": "Когда враг устраивает засаду.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ты атакуешь первым.",
+          "effect_note": "Игрок ходит первым.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "initiative"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Ремесло",
+      "archetype": "Боевые и прикладные",
+      "checks": [
+        {
+          "id": "craft_mechanism",
+          "title": "Понимание механизма",
+          "context": "exploration",
+          "trigger": "Осмотр замка/ловушки/механизма.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь принцип работы.",
+          "effect_note": "ДМ даёт схему взаимодействия.",
+          "synergy": [
+            "Наука"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "mechanism"
+          ]
+        },
+        {
+          "id": "craft_barter",
+          "title": "Тонкий торг",
+          "context": "social",
+          "trigger": "Единичная сделка.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "10% выгоднее.",
+          "effect_note": "Единовременная скидка/наценка.",
+          "synergy": [
+            "Манипуляция и Торговля"
+          ],
+          "frequency": "once_per_scene",
+          "tags": [
+            "trade"
+          ]
+        },
+        {
+          "id": "craft_value",
+          "title": "Определение ценности",
+          "context": "exploration",
+          "trigger": "Осмотр витрин/лута.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Сразу видишь стоящее.",
+          "effect_note": "Маркировка «лучший выбор».",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "loot"
+          ]
+        },
+        {
+          "id": "craft_break_weapon",
+          "title": "Сломать оружие",
+          "context": "combat",
+          "trigger": "Ближний контакт с вооружённым врагом.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Оружие выведено из строя.",
+          "effect_note": "Штраф к атакам врага до замены.",
+          "synergy": [
+            "Боевая подготовка"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "control"
+          ]
+        },
+        {
+          "id": "craft_disarm_trap_live",
+          "title": "Нужная шестерёнка",
+          "context": "exploration",
+          "trigger": "Ловушка уже срабатывает.",
+          "dc": {
+            "mode": "relative",
+            "offset": 2
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Обезврежено без тревоги.",
+          "effect_note": "Избежан урон/сигнал.",
+          "synergy": [
+            "Акробатика"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "trap"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Скрытность",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "stealth_spot_enemy_first",
+          "title": "Обнаружить скрытого врага",
+          "context": "exploration",
+          "trigger": "Подозрительная зона/шорохи.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ты замечаешь первым и успеваешь среагировать.",
+          "effect_note": "Преимущество инициативы/позиции.",
+          "synergy": [
+            "Поиск"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "awareness"
+          ]
+        },
+        {
+          "id": "stealth_safe_path",
+          "title": "Гарантированно незаметный путь",
+          "context": "exploration",
+          "trigger": "Плотная охрана/камеры/посты.",
+          "dc": {
+            "mode": "relative",
+            "offset": 2
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Находишь маршрут без риска заметности.",
+          "effect_note": "Без проверок на участке.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "route"
+          ]
+        },
+        {
+          "id": "stealth_avoid_detection",
+          "title": "Избежать обнаружения",
+          "context": "exploration",
+          "trigger": "Неудачные обстоятельства против тебя.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Остаёшься незамеченным вопреки ситуации.",
+          "effect_note": "Тихий проход.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "stealth"
+          ]
+        },
+        {
+          "id": "stealth_perfect_moment",
+          "title": "Идеальный момент",
+          "context": "exploration",
+          "trigger": "Есть возможность мгновенного нейтрала.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Снимаешь цель без проверок.",
+          "effect_note": "Скрытое убийство/нейтрализация.",
+          "synergy": [
+            "Тень"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "assassination"
+          ]
+        },
+        {
+          "id": "stealth_hide_body",
+          "title": "Маскировка тела",
+          "context": "exploration",
+          "trigger": "После скрытого убийства.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Тело исчезает для посторонних глаз.",
+          "effect_note": "Снижен шанс тревоги.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "coverup"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Поиск",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "awareness_hidden_elements",
+          "title": "Скрытые элементы",
+          "context": "exploration",
+          "trigger": "Есть шанс, что что-то спрятано.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ловушка/тайник/дверь обнаружены.",
+          "effect_note": "ДМ выделяет объект в тексте.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "secret"
+          ]
+        },
+        {
+          "id": "awareness_senses",
+          "title": "Острые чувства",
+          "context": "exploration",
+          "trigger": "Запахи/звуки/шёпот.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чуешь детали (масло, озон, гниль).",
+          "effect_note": "Подсказка по угрозе.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "scent",
+            "sound"
+          ]
+        },
+        {
+          "id": "awareness_enemy_weakness",
+          "title": "Уязвимость врага",
+          "context": "combat",
+          "trigger": "Взгляд на цель.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "+4 к следующей атаке по цели.",
+          "effect_note": "Тактический бонус.",
+          "synergy": [
+            "Тактика",
+            "Боевая подготовка"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "advantage"
+          ]
+        },
+        {
+          "id": "awareness_spot_first",
+          "title": "Вижу первым",
+          "context": "exploration",
+          "trigger": "Разведка/наблюдение.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Обнаружил скрытого врага первым — можешь атаковать первым.",
+          "effect_note": "Преимущество старта.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "initiative"
+          ]
+        },
+        {
+          "id": "awareness_prevent_attack",
+          "title": "Превентивная реакция",
+          "context": "combat",
+          "trigger": "Враг готовит удар.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Успеваешь среагировать до попадания.",
+          "effect_note": "Снижение/избежание урона.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "preempt"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Выживание",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "survival_plant_id",
+          "title": "Полезное или опасное растение",
+          "context": "exploration",
+          "trigger": "Дикая местность/сад/болото.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Сразу понимаешь свойства.",
+          "effect_note": "Совет по сбору/избеганию.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "flora"
+          ]
+        },
+        {
+          "id": "survival_natural_route",
+          "title": "Природный маршрут",
+          "context": "exploration",
+          "trigger": "Лес/поле/пещеры/джунгли.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Находишь безопасный путь.",
+          "effect_note": "Оптимальный маршрут.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "route"
+          ]
+        },
+        {
+          "id": "survival_weather_sense",
+          "title": "Чувство погоды",
+          "context": "exploration",
+          "trigger": "Перемены в небе/ветре.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Предупреждение о непогоде.",
+          "effect_note": "Время на подготовку.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "weather"
+          ]
+        },
+        {
+          "id": "survival_hazard_terrain",
+          "title": "Опасная местность",
+          "context": "exploration",
+          "trigger": "Болото/лавина/каменепад/зыбучие.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Заблаговременно замечено.",
+          "effect_note": "Избежана ловушка окружения.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "terrain"
+          ]
+        },
+        {
+          "id": "survival_field_rest",
+          "title": "Полевой отдых",
+          "context": "exploration",
+          "trigger": "Ночёвка вне кровати.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Снимаешь усталость полностью.",
+          "effect_note": "Вместо 35% — полное восстановление.",
+          "synergy": [
+            "Выносливость"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "rest"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Ловкость рук",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "sleight_deflect",
+          "title": "Отбить снаряд",
+          "context": "combat",
+          "trigger": "Летит снаряд (стрела, нож).",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Полная отмена урона; на крит — метаешь обратно.",
+          "effect_note": "Нужен отдельный бросок на попадание при возврате.",
+          "synergy": [
+            "Акробатика"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "deflect"
+          ]
+        },
+        {
+          "id": "sleight_lock",
+          "title": "Опытный медвежатник",
+          "context": "exploration",
+          "trigger": "Осмотр замка.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь принцип — вскрываешь без проверки.",
+          "effect_note": "Авто-успех на простых замках.",
+          "synergy": [
+            "Ремесло"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "lock"
+          ]
+        },
+        {
+          "id": "sleight_steal_throw",
+          "title": "Украл-вернул",
+          "context": "combat",
+          "trigger": "После своей атаки.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Крадёшь предмет у врага и бросаешь в другого.",
+          "effect_note": "Требуется отдельный бросок на попадание.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "trick"
+          ]
+        },
+        {
+          "id": "sleight_pickpocket",
+          "title": "Невнимательный собеседник",
+          "context": "social",
+          "trigger": "Диалог/толпа.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Крадёшь мелочь/валюту без проверки.",
+          "effect_note": "Только мелкие предметы.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "theft"
+          ]
+        },
+        {
+          "id": "sleight_disarm",
+          "title": "Украсть оружие",
+          "context": "combat",
+          "trigger": "Вблизи, враг с оружием.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Оружие выхвачено — штраф к атакам врага.",
+          "effect_note": "−5 к атакам, пока без оружия.",
+          "synergy": [
+            "Защита"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "control"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Манипуляция и Торговля",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "trade_interest",
+          "title": "Заинтересовать торговца",
+          "context": "social",
+          "trigger": "Переговоры о цене.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Следующая сделка выгоднее на 10%.",
+          "effect_note": "Одноразовый эффект.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "trade"
+          ]
+        },
+        {
+          "id": "trade_wordplay",
+          "title": "Подловить на слове",
+          "context": "social",
+          "trigger": "Спор/уговоры.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "NPC уступает: улика/подсказка.",
+          "effect_note": "Открывает путь в диалоге.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "logic"
+          ]
+        },
+        {
+          "id": "trade_keep_talking",
+          "title": "Поддержать разговор",
+          "context": "social",
+          "trigger": "Затягиваешь беседу.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "NPC раскрывает лишнее.",
+          "effect_note": "Инфо может быть и пустой.",
+          "synergy": [
+            "Интуиция"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "chatter"
+          ]
+        },
+        {
+          "id": "trade_mimic",
+          "title": "Пересмешник",
+          "context": "social",
+          "trigger": "Копируешь манеру речи.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чуть улучшаешь расположение.",
+          "effect_note": "Мягкий сдвиг отношения.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "mimic"
+          ]
+        },
+        {
+          "id": "trade_under_counter",
+          "title": "Из-под полы",
+          "context": "social",
+          "trigger": "Правильный намёк.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Открывается нелегальный ассортимент.",
+          "effect_note": "Товар редкий/дорогой.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "blackmarket"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Интуиция",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "insight_lie",
+          "title": "Чую ложь",
+          "context": "social",
+          "trigger": "Сомнительная реплика.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чувствуешь обман.",
+          "effect_note": "ДМ помечает ложные части.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "truth"
+          ]
+        },
+        {
+          "id": "insight_trigger",
+          "title": "Триггер",
+          "context": "social",
+          "trigger": "Наблюдение за эмоциями.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь, что выводит NPC из равновесия.",
+          "effect_note": "Можно использовать как рычаг.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "emotion"
+          ]
+        },
+        {
+          "id": "insight_group_dynamics",
+          "title": "Динамика группы",
+          "context": "social",
+          "trigger": "Несколько NPC вместе.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Видишь лидера и ведомых.",
+          "effect_note": "Целевая дипломатия.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "hierarchy"
+          ]
+        },
+        {
+          "id": "insight_emotional_read",
+          "title": "Эмоциональный анализ",
+          "context": "social",
+          "trigger": "Жесты/взгляд/паузa.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Распознаёшь страх/вину/стыд и причину.",
+          "effect_note": "Подсказка для линии давления.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "psyche"
+          ]
+        },
+        {
+          "id": "insight_hidden_intent",
+          "title": "Скрытые намерения",
+          "context": "social",
+          "trigger": "Нечёткие ответы.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чувствуешь, что NPC что-то утаивает.",
+          "effect_note": "ДМ намекает что именно.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "intent"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Выступление",
+      "archetype": "Авантюристские и социальные",
+      "checks": [
+        {
+          "id": "perf_relief",
+          "title": "Разрядка",
+          "context": "social",
+          "trigger": "Напряжённая ситуация.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Снимаешь градус сцены.",
+          "effect_note": "Снижение напряжения/агрессии.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "mood"
+          ]
+        },
+        {
+          "id": "perf_read_audience",
+          "title": "Чтение аудитории",
+          "context": "social",
+          "trigger": "Толпа/зал/площадь.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Подстраиваешь подачу.",
+          "effect_note": "Бонус к следующей речи.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "crowd"
+          ]
+        },
+        {
+          "id": "perf_loud_word",
+          "title": "Громкое слово",
+          "context": "social",
+          "trigger": "Нужно, чтобы услышали все.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Фраза доходит до всех.",
+          "effect_note": "Распространение сообщения.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "reach"
+          ]
+        },
+        {
+          "id": "perf_role",
+          "title": "Роль",
+          "context": "social",
+          "trigger": "Общественное место, кроме чистого боя.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Враги игнорируют, считая обывателем.",
+          "effect_note": "Камуфляж роли.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "disguise"
+          ]
+        },
+        {
+          "id": "perf_joke_timing",
+          "title": "Шутка в моменте",
+          "context": "social",
+          "trigger": "Критическая ситуация.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Саботируешь агрессию/атаку комментарием.",
+          "effect_note": "Можно получить изобретательность.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "timing"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Магия",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "arcana_known_spell",
+          "title": "Знакомое заклинание",
+          "context": "any",
+          "trigger": "Рядом активная магия.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Определяешь заклинание.",
+          "effect_note": "Понимание эффекта/источника.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "identify"
+          ]
+        },
+        {
+          "id": "arcana_dispel",
+          "title": "Развеивание",
+          "context": "combat",
+          "trigger": "На тебя нацелена магическая атака.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Отменяешь магическую атаку.",
+          "effect_note": "Защита от магии.",
+          "synergy": [
+            "Концентрация"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "counter"
+          ]
+        },
+        {
+          "id": "arcana_anti_magic",
+          "title": "Тишина арканы",
+          "context": "exploration",
+          "trigger": "Искажения/гул в воздухе.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чувствуешь анти-магическое поле.",
+          "effect_note": "Предупреждение для тактики.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "field"
+          ]
+        },
+        {
+          "id": "arcana_illusion_spot",
+          "title": "Иллюзия",
+          "context": "any",
+          "trigger": "Подозрительный объект.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Отличаешь иллюзию от реальности.",
+          "effect_note": "Снятие обмана сцены.",
+          "synergy": [
+            "Магическое чутьё"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "illusion"
+          ]
+        },
+        {
+          "id": "arcana_artifact_eval",
+          "title": "Оценка артефакта",
+          "context": "exploration",
+          "trigger": "Осмотр предмета.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь опасность/заряд/проклятие.",
+          "effect_note": "Взвешенное решение игрока.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "artifact"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Магическое чутьё",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "msense_auras",
+          "title": "Ауры",
+          "context": "any",
+          "trigger": "Магический фон поблизости.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чувствуешь барьеры/следы/чары.",
+          "effect_note": "Навигация по магии.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "aura"
+          ]
+        },
+        {
+          "id": "msense_hidden_magic",
+          "title": "Скрытая магия",
+          "context": "any",
+          "trigger": "Ничего не видно, но чувство есть.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь, что магия присутствует.",
+          "effect_note": "Отчёт без распознавания школы.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "latent"
+          ]
+        },
+        {
+          "id": "msense_attack_premonition",
+          "title": "Предчувствие атаки",
+          "context": "combat",
+          "trigger": "Враг готовит магию.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Реагируешь первым.",
+          "effect_note": "Сдвиг инициативы/укрытие.",
+          "synergy": [
+            "Тактика"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "preempt"
+          ]
+        },
+        {
+          "id": "msense_entity",
+          "title": "Чуткость",
+          "context": "exploration",
+          "trigger": "Дух/магово существо поблизости.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чувствуешь присутствие до визуального контакта.",
+          "effect_note": "Раннее предупреждение.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "entity"
+          ]
+        },
+        {
+          "id": "msense_magic_trap",
+          "title": "Ловушка",
+          "context": "exploration",
+          "trigger": "Магическая ловушка.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Избегаешь срабатывания/нейтрализуешь без тревоги.",
+          "effect_note": "Безопасный проход.",
+          "synergy": [
+            "Магия"
+          ],
+          "frequency": "adaptive",
+          "tags": [
+            "trap"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Концентрация",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "focus_clear_mind",
+          "title": "Ясный разум",
+          "context": "social",
+          "trigger": "Стрессовая сцена/допрос/хаос.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Не получаешь усталость/штраф.",
+          "effect_note": "Игнор умственной усталости.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "stress"
+          ]
+        },
+        {
+          "id": "focus_mental_defense",
+          "title": "Ментальная защита",
+          "context": "any",
+          "trigger": "Иллюзии/внушение/чтение мыслей.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Не поддаёшься.",
+          "effect_note": "Иммун сцены.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "mind"
+          ]
+        },
+        {
+          "id": "focus_second_cast",
+          "title": "Холодный разум",
+          "context": "combat",
+          "trigger": "Первая магическая атака не удалась.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Совершаешь вторую магическую атаку в ход.",
+          "effect_note": "Темпо-выигрыш.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "tempo"
+          ]
+        },
+        {
+          "id": "focus_extend_spell",
+          "title": "Продление заклинаний",
+          "context": "any",
+          "trigger": "Активно эффект длится.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Продлеваешь длительность.",
+          "effect_note": "Нельзя продлевать продлённое.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "duration"
+          ]
+        },
+        {
+          "id": "focus_battle_focus",
+          "title": "Боевая концентрация",
+          "context": "combat",
+          "trigger": "Со 2-го хода боя.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "+1 к броскам; стакается до +5.",
+          "effect_note": "Постепенный боевой бонус.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "stack"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Наука",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "science_mechanism",
+          "title": "Разбор механизма",
+          "context": "exploration",
+          "trigger": "Устройство/зелье/процесс.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь как работает.",
+          "effect_note": "Появляется рычаг взаимодействия.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "mechanism"
+          ]
+        },
+        {
+          "id": "science_strengths",
+          "title": "Сильные и слабые стороны",
+          "context": "any",
+          "trigger": "Существо/конструкт.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Получаешь анализ сильных/слабых сторон.",
+          "effect_note": "Выбор правильного подхода.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "analysis"
+          ]
+        },
+        {
+          "id": "science_deduction",
+          "title": "Дедукция",
+          "context": "exploration",
+          "trigger": "Есть следы/данные/паттерны.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Замечаешь закономерности; улика/подсказка.",
+          "effect_note": "Прогресс в расследовании.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "investigation"
+          ]
+        },
+        {
+          "id": "science_ballistics",
+          "title": "Быстрый расчёт",
+          "context": "combat",
+          "trigger": "Требуется точная траектория.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Верная траектория/заброс.",
+          "effect_note": "Помогает дистанц. атакам/гранатам.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "trajectory"
+          ]
+        },
+        {
+          "id": "science_explain",
+          "title": "Справка",
+          "context": "any",
+          "trigger": "Непонятное явление.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Даёшь ясное объяснение.",
+          "effect_note": "Снятие путаницы, навигация.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "lore"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "История",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "history_heraldry",
+          "title": "Геральдика",
+          "context": "exploration",
+          "trigger": "Гербы/печати.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Узнаёшь статус владельца.",
+          "effect_note": "Соц-ключ в диалоге.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "heraldry"
+          ]
+        },
+        {
+          "id": "history_legend",
+          "title": "Легенда",
+          "context": "any",
+          "trigger": "Место/предмет/явление из прошлого.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Вспоминаешь историю/миф.",
+          "effect_note": "Контекст и подсказки.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "legend"
+          ]
+        },
+        {
+          "id": "history_ancient_text",
+          "title": "Древние тексты",
+          "context": "exploration",
+          "trigger": "Руны/старый язык.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Читаешь и понимаешь.",
+          "effect_note": "Достаём смыслы.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "language"
+          ]
+        },
+        {
+          "id": "history_past_link",
+          "title": "Связь с прошлым",
+          "context": "any",
+          "trigger": "Ситуация с древними корнями.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Получаешь подсказку.",
+          "effect_note": "Наводка по лору.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "context"
+          ]
+        },
+        {
+          "id": "history_new_event",
+          "title": "Новое явление",
+          "context": "any",
+          "trigger": "Нечто необычное.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь, что это уникально — не встречалось ранее.",
+          "effect_note": "Осторожность и исследование.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "novel"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Природа",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "nature_danger_plant",
+          "title": "Опасное растение",
+          "context": "exploration",
+          "trigger": "Флора вокруг.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Опасность замечена заранее.",
+          "effect_note": "Избежать контакта/использовать выгодно.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "flora"
+          ]
+        },
+        {
+          "id": "nature_unnatural_silence",
+          "title": "Неестественная тишина",
+          "context": "exploration",
+          "trigger": "Обстановка странно тихая.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Чувствуешь неладное.",
+          "effect_note": "Ожидание засады/существа.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "omen"
+          ]
+        },
+        {
+          "id": "nature_inconsistency",
+          "title": "Несоответствие",
+          "context": "exploration",
+          "trigger": "Среда выглядит «не так».",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Находишь аномалию.",
+          "effect_note": "Улика/подсказка.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "anomaly"
+          ]
+        },
+        {
+          "id": "nature_predator_territory",
+          "title": "Территория хищника",
+          "context": "exploration",
+          "trigger": "Следы/метки.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Избегаешь встречи/боя.",
+          "effect_note": "Байпас сцены.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "avoid"
+          ]
+        },
+        {
+          "id": "nature_animal_trail",
+          "title": "Животная тропа",
+          "context": "exploration",
+          "trigger": "Поход через дикую местность.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Короткий/безопасный путь.",
+          "effect_note": "Сильный маршрутный бафф.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "route"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Медицина",
+      "archetype": "Научные и магические",
+      "checks": [
+        {
+          "id": "med_heal_boost",
+          "title": "Эффективное лечение",
+          "context": "any",
+          "trigger": "Применяешь предмет/заклинание лечения.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Лечит заметно сильнее.",
+          "effect_note": "Сильнее стабилизация/хил.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "heal"
+          ]
+        },
+        {
+          "id": "med_anamnesis",
+          "title": "Анамнез",
+          "context": "exploration",
+          "trigger": "NPC «мертв»/ранен подозрительно.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Понимаешь симуляцию/обман.",
+          "effect_note": "Раскрытие уловки.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "deception"
+          ]
+        },
+        {
+          "id": "med_diagnosis",
+          "title": "Диагностика",
+          "context": "any",
+          "trigger": "Подозрение на яд/болезнь.",
+          "dc": {
+            "mode": "relative",
+            "offset": 0
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Ранняя диагностика.",
+          "effect_note": "Предупреждение, план лечения.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "diagnosis"
+          ]
+        },
+        {
+          "id": "med_stop_bleed",
+          "title": "Остановка крови",
+          "context": "combat",
+          "trigger": "У тебя/союзника кровотечение.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Быстро стабилизируешь.",
+          "effect_note": "Снятие или ослабление статуса.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "stabilize"
+          ]
+        },
+        {
+          "id": "med_inflict_bleed",
+          "title": "Кровотечение",
+          "context": "combat",
+          "trigger": "Удачная атака по мягкой цели.",
+          "dc": {
+            "mode": "rank"
+          },
+          "announce": true,
+          "on_fail_silent": true,
+          "success_highlight": true,
+          "success_hint": "Накладываешь «кровотечение».",
+          "effect_note": "Статус на врага.",
+          "synergy": [],
+          "frequency": "adaptive",
+          "tags": [
+            "status"
+          ]
+        }
+      ]
+    }
+  ]
+}

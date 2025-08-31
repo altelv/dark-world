@@ -1,52 +1,54 @@
-import React, { useState } from "react";
-import { LeftPanelCharacter } from "./components/LeftPanelCharacter";
-import D20RollLauncher from "./game/dice/D20RollLauncher";
-import { seedCharacter } from "./game/examples/seedCharacter";
-import type { RollRequest, RollResolution } from "./game/state/types";
-
-const spin = [
-  "/assets/d20/spin_1.png",
-  "/assets/d20/spin_2.png",
-  "/assets/d20/spin_3.png",
-  "/assets/d20/spin_4.png",
-];
-const resultDefault = "/assets/d20/result_default.png";
-const resultSpecial = "/assets/d20/result_special.png";
+import React, { useMemo, useState } from 'react'
+import { LeftPanelCharacter } from './components/LeftPanelCharacter'
+import { CenterChat } from './components/CenterChat'
+import { RightPanelInventory } from './components/RightPanelInventory'
+import { seedCharacter } from './game/examples/seedCharacter'
+import type { RollRequest, RollResolution } from './game/state/types'
 
 export default function App() {
-  const [char] = useState(seedCharacter);
-  const [log, setLog] = useState<string[]>([]);
-
-  const req: RollRequest = { skill: "Stealth", dc: 15, ingenuity: 2 };
-
-  const onResolved = (r: RollResolution) => {
-    const status = r.crit === "critSuccess" ? "УСПЕХ!" : r.crit === "critFail" ? "Провал…" : (r.success ? "УСПЕХ!" : "Провал…");
-    setLog(l => [
-      status,
-      `==Проверка ${req.skill}== d20=${(r as any).d20 ?? r.d20Raw} → total=${r.total} vs DC ${r.dc}`,
-      ...l,
-    ]);
-  };
+  const [mode, setMode] = useState<'Бой'|'Сюжет'>('Сюжет')
+  const [char, setChar] = useState(seedCharacter())
+  const [pendingRoll, setPendingRoll] = useState<RollRequest | null>(null)
+  const [lastRoll, setLastRoll] = useState<RollResolution | null>(null)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-black text-zinc-100 grid grid-cols-12">
-      <div className="col-span-3">
-        <LeftPanelCharacter char={char} />
-      </div>
-      <div className="col-span-6 p-6">
-        <D20RollLauncher
-          char={char}
-          request={req}
-          spinFrames={spin}
-          resultDefault={resultDefault}
-          resultSpecial={resultSpecial}
-          onResolved={onResolved}
-        />
-        <div className="mt-6 space-y-2">
-          {log.map((s, i) => (<div key={i} className="text-yellow-400">{s}</div>))}
+    <div className="app-grid">
+      <div className="panel">
+        <div className="panel-header">Персонаж</div>
+        <div className="panel-body">
+          <LeftPanelCharacter character={char} onChange={setChar} mode={mode} />
         </div>
       </div>
-      <div className="col-span-3" />
+
+      <div className="panel">
+        <div className="panel-header">
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+            <div>Чат</div>
+            <div className="mode-switch">
+              {(['Сюжет','Бой'] as const).map(m => (
+                <div key={m} className={'mode-chip ' + (mode===m?'active':'')}
+                  onClick={()=>setMode(m)}>{m}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="panel-body">
+          <CenterChat character={char}
+            mode={mode}
+            pendingRoll={pendingRoll}
+            setPendingRoll={setPendingRoll}
+            lastRoll={lastRoll}
+            setLastRoll={setLastRoll}
+          />
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-header">Инвентарь (позже)</div>
+        <div className="panel-body">
+          <RightPanelInventory />
+        </div>
+      </div>
     </div>
-  );
+  )
 }
