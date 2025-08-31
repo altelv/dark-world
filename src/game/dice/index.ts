@@ -1,1 +1,1 @@
-export * from './D20RollLauncher'
+export { D20RollLauncher } from './D20RollLauncher';

@@ -1,33 +1,18 @@
-
-import type { Character, SkillName } from './types'
-
-export const genderBonuses: Record<string, Record<SkillName, number>> = {
-  'Мужчина': {'Выносливость':2, 'Физическая подготовка':2, 'Тактика':2, 'Ловкость рук':2} as any,
-  'Женщина': {'Медицина':2, 'Интуиция':2, 'Акробатика':2, 'Магическое чутьё':2} as any,
-  'Другое': {'Защита':2, 'Поиск':2, 'Наука':2, 'Выступление':2} as any,
-}
-
-export function applyGenderChange(char: Character, newGender: Character['gender']): Character {
-  const c: Character = { ...char, skills: { ...char.skills }, __meta: { ...(char.__meta||{}) } }
-  const prev = c.__meta?.prevGender
-  if(prev && prev!==newGender){
-    const back = genderBonuses[prev] || {}
-    Object.entries(back).forEach(([sk,v])=>{
-      c.skills[sk as SkillName] = Math.max(0, (c.skills[sk as SkillName]||0) - (v as number))
-    })
-  }
-  const add = genderBonuses[newGender] || {}
-  Object.entries(add).forEach(([sk,v])=>{
-    const cap = 20
-    const cur = c.skills[sk as SkillName] || 0
-    let next = cur + (v as number)
-    if(next > cap){
-      c.freePoints += (next - cap)
-      next = cap
-    }
-    c.skills[sk as SkillName] = next
-  })
-  c.__meta = { ...(c.__meta||{}), prevGender: newGender }
-  c.gender = newGender
-  return c
+import type { Character, SkillId, Sex } from './types';
+const MAP: Record<Sex, Partial<Record<SkillId, number>>> = {
+  'Мужчина': { endurance:+2, athletics:+2, tactics:+2, combat:+2 },
+  'Женщина': { medicine:+2, insight:+2, performance:+2, msense:+2 },
+  'Не указан': { awareness:+2, nature:+2, science:+2, defense:+2 },
+};
+export function applySexBonuses(ch: Character): Character {
+  const b = MAP[ch.sex] ?? {}; let refund = 0;
+  const next = { ...ch, skills: { ...ch.skills } };
+  (Object.keys(b) as SkillId[]).forEach((id) => {
+    const add = b[id]!; const cap = next.caps[id];
+    const newLvl = next.skills[id] + add;
+    if (newLvl > cap) { refund += (newLvl - cap); next.skills[id] = cap; }
+    else { next.skills[id] = newLvl; }
+  });
+  if (refund) next.bank += refund;
+  return next;
 }
