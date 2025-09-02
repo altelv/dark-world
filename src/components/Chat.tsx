@@ -42,7 +42,7 @@ export function Chat(){
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
       <div ref={listRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-4">
         {messages.map(m => (
           <div key={m.id} className={clsx(m.role==="dm" ? "w-full" : "max-w-[84%] ml-auto")}>
@@ -51,11 +51,12 @@ export function Chat(){
               m.role==="player" ? "bg-iron" : m.role==="dm" ? "bg-coal" : "bg-transparent text-ash border border-iron"
             )}>
               {Array.isArray(m.meta?.to_ui) && m.meta.to_ui.map((cmd:any, idx:number)=>{
+                const k = m.id + ":" + idx
                 if (cmd?.cmd === "show_image" && cmd?.payload?.prompt){
-                  return <ImageBlock key={idx} kind="scene" prompt={cmd.payload.prompt} />
+                  return <ImageBlock key={k} kind="scene" prompt={cmd.payload.prompt} />
                 }
                 if (cmd?.cmd === "show_creature" && cmd?.payload?.prompt){
-                  return <ImageBlock key={idx} kind="creature" prompt={cmd.payload.prompt} />
+                  return <ImageBlock key={k} kind="creature" prompt={cmd.payload.prompt} />
                 }
                 return null
               })}
@@ -70,8 +71,9 @@ export function Chat(){
       {!atBottom && (
         <button
           onClick={()=> endRef.current?.scrollIntoView({ behavior:"smooth" })}
-          className="absolute right-6 bottom-28 md:bottom-8 z-30 rounded-full w-10 h-10 bg-iron text-ash border border-iron hover:bg-iron/80"
+          className="absolute right-4 bottom-20 md:bottom-4 z-30 rounded-full w-10 h-10 bg-iron text-ash border border-iron hover:bg-iron/80"
           aria-label="В самый низ"
+          title="В самый низ"
         >▼</button>
       )}
 
