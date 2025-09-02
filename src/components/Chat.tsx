@@ -3,28 +3,49 @@ import { useEffect, useRef, useState } from "react"
 import clsx from "clsx"
 import { ImageBlock } from "./ImageBlock"
 
-function Thinking(){
-  return <div className="text-ash text-sm mt-1 typing">ДМ думает</div>
+function StatusLine({ phase }:{ phase:"thinking"|"typing"|null }){
+  if (!phase) return null
+  return (
+    <div className="text-ash text-xs mt-1 flex items-center gap-2">
+      <span>{phase==="thinking" ? "Рассказчик думает" : "Рассказчик печатает"}</span>
+      <span className="typing-dots"><i></i><i></i><i></i></span>
+    </div>
+  )
 }
 
 export function Chat(){
-  const { messages, sendPlayer, pending } = useGameStore()
+  const { messages, pendingPhase, sendPlayer } = useGameStore()
   const [text, setText] = useState("")
+  const listRef = useRef<HTMLDivElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  const [atBottom, setAtBottom] = useState(true)
 
-  useEffect(()=>{ endRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages.length, pending])
+  useEffect(()=>{ endRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages.length, pendingPhase])
+
+  useEffect(()=>{
+    const el = listRef.current
+    if (!el) return
+    const onScroll = ()=>{
+      const diff = el.scrollHeight - el.clientHeight - el.scrollTop
+      setAtBottom(diff < 12)
+    }
+    el.addEventListener("scroll", onScroll, { passive: true })
+    onScroll()
+    return ()=> el.removeEventListener("scroll", onScroll)
+  }, [])
 
   const onSubmit = () => {
     const v = text.trim()
-    if (!v || pending) return
-    sendPlayer(v); setText("")
+    if (!v) return
+    sendPlayer(v)
+    setText("")
   }
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-4">
         {messages.map(m => (
-          <div key={m.id} className={clsx("max-w-[84%]", m.role==="player" ? "ml-auto" : "")}>
+          <div key={m.id} className={clsx(m.role==="dm" ? "w-full" : "max-w-[84%] ml-auto")}>
             <div className={clsx(
               "rounded-xl2 p-4 shadow-soft",
               m.role==="player" ? "bg-iron" : m.role==="dm" ? "bg-coal" : "bg-transparent text-ash border border-iron"
@@ -42,9 +63,18 @@ export function Chat(){
             </div>
           </div>
         ))}
-        {pending && <Thinking/>}
+        <StatusLine phase={pendingPhase}/>
         <div ref={endRef}/>
       </div>
+
+      {!atBottom && (
+        <button
+          onClick={()=> endRef.current?.scrollIntoView({ behavior:"smooth" })}
+          className="absolute right-6 bottom-28 md:bottom-8 z-30 rounded-full w-10 h-10 bg-iron text-ash border border-iron hover:bg-iron/80"
+          aria-label="В самый низ"
+        >▼</button>
+      )}
+
       <div className="pt-3">
         <div className="relative">
           <textarea
@@ -56,11 +86,11 @@ export function Chat(){
           />
           <button
             onClick={onSubmit}
-            disabled={pending}
+            disabled={!!pendingPhase}
             aria-label="Отправить"
             className={clsx(
               "absolute right-3 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 flex items-center justify-center shadow-soft border",
-              pending ? "bg-iron text-ash border-iron cursor-not-allowed opacity-60" : "bg-accent text-white border-accent hover:bg-accent/90"
+              pendingPhase ? "bg-iron text-ash border-iron cursor-not-allowed opacity-60" : "bg-accent text-white border-accent hover:bg-accent/90"
             )}
           >
             ➤
