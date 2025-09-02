@@ -5,6 +5,7 @@ import { mulberry32, seedFromString } from "@utils/prng"
 export interface GameState {
   seed:number; rng:()=>number; hero:Hero; enemies:Enemy[]; messages:Message[]; statuses:Status[];
   scene:{id:string, name:string}; distance:"melee"|"near"|"far"|"very_far";
+  pending:boolean;
   bootstrap:()=>void; sendPlayer:(text:string)=>Promise<void>;
 }
 
@@ -23,6 +24,7 @@ export const useGameStore = create<GameState>((set, get)=>({
   statuses: [],
   scene: { id:"start", name:"Пустошь у тракта" },
   distance: "near",
+  pending: false,
   bootstrap: ()=>{
     const s = get()
     if (!s.messages.length){
@@ -34,14 +36,19 @@ export const useGameStore = create<GameState>((set, get)=>({
   sendPlayer: async (text:string)=>{
     const before = get().messages
     const id = crypto.randomUUID()
-    set({ messages: [...before, { id, role:"player", text }] })
+    set({ pending: true, messages: [...before, { id, role:"player", text }] })
     try{
-      const res = await fetch("/api/narrate", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ text, state: { hero: get().hero, scene: get().scene, enemies: get().enemies } }) })
+      const res = await fetch("/api/narrate", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ text, state: { hero: get().hero, scene: get().scene, enemies: get().enemies } })
+      })
       const data = await res.json()
       const toPlayer = data?.to_player || "…"
-      set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"dm", text: toPlayer, meta: data }] })
+      set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"dm", text: toPlayer, meta: data } ] })
     }catch(e:any){
       set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"system", text: "Сбой рассказчика. Попробуйте ещё раз." }] })
+    } finally {
+      set({ pending: false })
     }
   }
 }))
