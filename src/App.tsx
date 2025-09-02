@@ -1,29 +1,34 @@
 import React from "react";
-import CharacterPanel from "./components/CharacterPanel";
-import Chat from "./components/Chat/Chat";
-import InventoryPanel from "./components/InventoryPanel";
+import Chat from "./components/Chat"; // универсальный импорт, как обычно в проекте
 import "./styles/layout.css";
 
 /**
- * Корневой трёхколоночный лэйаут.
- * - grid 3 колонки во всю ширину и высоту экрана
- * - скролл только у средней колонки (чат)
- * - боковые фиксированные (overflow hidden)
- * ВНИМАНИЕ: компонент Chat внутри сам управляет своим вертикальным скроллом.
+ * Жёсткий трёхколоночный layout.
+ * - grid 3 колонки на десктопе
+ * - скролл только у центра (чат)
+ * - боковые панели «заглушки-обёртки» с mount-точками (не требуют импортов)
  */
 export default function App() {
   return (
     <div className="dw-app-grid">
       <aside className="dw-col dw-col--side">
-        <CharacterPanel />
+        <div className="dw-side-wrap">
+          <h2 className="dw-side-title">Персонаж</h2>
+          <div id="character-mount" className="dw-side-body" />
+        </div>
       </aside>
 
       <main className="dw-col dw-col--chat">
-        <Chat />
+        <div className="dw-stretch">
+          <Chat />
+        </div>
       </main>
 
       <aside className="dw-col dw-col--side">
-        <InventoryPanel />
+        <div className="dw-side-wrap">
+          <h2 className="dw-side-title">Инвентарь</h2>
+          <div id="inventory-mount" className="dw-side-body" />
+        </div>
       </aside>
     </div>
   );
