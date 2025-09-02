@@ -1,13 +1,10 @@
+// DW SAFE APP LAYOUT — hard replace
+// Этот файл полностью заменяет ваш src/App.tsx и НЕ импортирует CharacterPanel/InventoryPanel.
+
 import React from "react";
-import Chat from "./components/Chat"; // универсальный импорт, как обычно в проекте
+import Chat from "./components/Chat"; // если у вас Chat лежит в другом пути, поправьте импорт тут
 import "./styles/layout.css";
 
-/**
- * Жёсткий трёхколоночный layout.
- * - grid 3 колонки на десктопе
- * - скролл только у центра (чат)
- * - боковые панели «заглушки-обёртки» с mount-точками (не требуют импортов)
- */
 export default function App() {
   return (
     <div className="dw-app-grid">
