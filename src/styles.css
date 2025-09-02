@@ -1,56 +1,13 @@
-
-:root{
-  --bg:#0b0b0c; --panel:#121216; --ink:#e7e7ea; --ink-dim:#a9a9b5;
-  --stroke:#24242c; --header:#16161b; --accent:#7c60ff; --gold:#ffd166; --violet:#661d87;
-}
-*{box-sizing:border-box}
-html,body,#root{height:100%}
-body{margin:0;font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--bg);color:var(--ink)}
-/* STRICT 30/40/30 with safe min widths */
-.app-grid{
-  position:relative;
-  display:grid; grid-template-columns:minmax(280px,30%) minmax(420px,40%) minmax(280px,30%);
-  grid-template-rows:100vh; gap:8px; padding:8px;
-}
-.panel{background:var(--panel); border:1px solid var(--stroke); border-radius:12px; overflow:hidden}
-.panel-header{position:sticky; top:0; z-index:1; padding:10px 12px; background:var(--header); border-bottom:1px solid var(--stroke); font-weight:700; letter-spacing:.3px}
-/* SIDE PANELS STATIC (no scroll) */
-.panel-body{padding:12px; height:calc(100% - 44px); overflow:hidden}
-/* CENTER CHAT: only this scrolls */
-.chat-wrap{display:flex; flex-direction:column; height:100%; gap:12px}
-.chat-log{flex:1; overflow:auto; padding-right:6px}
-.chat-msg{margin:6px 0; opacity:.97}
-/* Input "bubble" */
-.chat-input{position:sticky; bottom:0; display:flex; align-items:center; gap:8px; padding-top:4px; background:linear-gradient(180deg, transparent, rgba(0,0,0,.35) 50%, rgba(0,0,0,.6))}
-.chat-input textarea{flex:1; resize:none; min-height:48px; max-height:140px; padding:10px 12px; background:#0f0f13; color:var(--ink); border:1px solid var(--stroke); border-radius:14px}
-.btn{border:1px solid var(--stroke); background:#1b1b24; color:var(--ink); padding:10px 14px; border-radius:999px; cursor:pointer; transition:opacity .2s ease, transform .06s ease}
-.btn:active{transform:translateY(1px)}
-.btn[disabled]{opacity:.45; cursor:not-allowed}
-.btn-primary{background:#20202b}
-.btn-gold{background:#221b10; border-color:#4b3c18; color:var(--gold)}
-/* Left column sections */
-.left-section{display:grid; grid-template-rows:auto auto auto 1fr; gap:10px}
-.avatar{width:100%; aspect-ratio:1/1; background:#0d0d12; border:1px solid var(--stroke); border-radius:10px; display:grid; place-items:center; color:#6a6a80; font-size:12px; text-align:center; padding:8px}
-.row{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-.tag{font-size:12px; padding:3px 8px; border-radius:999px; background:#171720; border:1px solid var(--stroke)}
-.small{font-size:12px; color:var(--ink-dim)}
-/* Skills table */
-.skills-grid{display:grid; grid-template-columns:1fr auto auto auto; gap:6px; align-items:center}
-.skill-row{padding:6px 8px; border-bottom:1px dashed var(--stroke)}
-.skill-name{font-size:13px}
-.skill-bonus{min-width:48px; text-align:center; padding:3px 6px; border:1px solid var(--stroke); border-radius:8px}
-.skill-plus{width:24px; height:24px; display:grid; place-items:center; border-radius:6px; border:1px solid var(--stroke); background:#15151c; cursor:pointer}
-.skill-plus[disabled]{opacity:.4; cursor:not-allowed}
-/* D20 visuals */
-.dice-area{display:grid; place-items:center; min-height:220px; position:relative}
-.dice-canvas{width:128px; height:128px; image-rendering:pixelated}
-.flash,.pulse,.sparks,.num{position:absolute; width:128px; height:128px; pointer-events:none}
-.pulse{opacity:0; mix-blend-mode:screen}
-.num{display:grid; place-items:center; left:2px; top:0; font-weight:900; text-shadow:0 0 2px #000,0 0 6px #000; transition:color .85s ease, filter .85s ease, opacity .6s ease; color:#fff}
-.num.glow{color:var(--gold); filter:drop-shadow(0 0 8px rgba(255,209,102,.85))}
-.fade-out{animation:fadeout .9s ease forwards} @keyframes fadeout{to{opacity:0; transform:translateY(4px) scale(.98)}}
-.hl-yellow{background:linear-gradient(transparent 30%, rgba(255,209,102,.45) 30%, rgba(255,209,102,.45) 85%, transparent 85%)}
-.enemy-line{margin-top:6px; font-size:12px; opacity:.9}
-/* Column marker (three stripes) overlay */
-.col-marker{position:absolute; top:2px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:10; pointer-events:none}
-.col-marker span{width:22px; height:3px; background:#5e5e72; opacity:.65; border-radius:2px}
+@tailwind base; @tailwind components; @tailwind utilities;
+:root { color-scheme: dark; }
+.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #2a2935; border-radius: 8px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.d20-spot { position: relative; width: 96px; height: 96px; margin: 0 auto; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(157,78,221,.35), rgba(157,78,221,.06) 60%, transparent 70%);
+  box-shadow: 0 0 40px rgba(157,78,221,.2); }
+.spin { animation: spin 3s cubic-bezier(.2,.9,.2,1) forwards; }
+@keyframes spin { from{transform: rotate(0deg) scale(.9)} 60%{transform: rotate(540deg) scale(1.05)} to{transform: rotate(720deg) scale(1)} }
+.result-pop { animation: pop .6s ease-out forwards; }
+@keyframes pop { 0%{ transform: translateX(2px) scale(.9); opacity:.0 } 100%{ transform: translateX(4px) scale(1); opacity:1 } }
+.glow-gold { text-shadow: 0 0 6px rgba(241,196,15,.75), 0 0 14px rgba(241,196,15,.35); }
