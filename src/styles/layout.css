@@ -1,4 +1,4 @@
-/* DW layout hard replace */
+/* DW layout — grid 3 columns, scroll only center */
 html, body, #root { height: 100%; }
 
 .dw-app-grid {

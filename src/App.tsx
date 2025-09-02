@@ -1,8 +1,8 @@
-// DW SAFE APP LAYOUT — hard replace
-// Этот файл полностью заменяет ваш src/App.tsx и НЕ импортирует CharacterPanel/InventoryPanel.
+// DW APP — hard replace to avoid missing imports.
+// ЗАМЕНИТЕ src/App.tsx ЭТИМ ФАЙЛОМ.
 
 import React from "react";
-import Chat from "./components/Chat"; // если у вас Chat лежит в другом пути, поправьте импорт тут
+import Chat from "./components/Chat"; // поправьте путь, если у вас иначе
 import "./styles/layout.css";
 
 export default function App() {
