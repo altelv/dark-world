@@ -1,0 +1,58 @@
+/* ====== Dark World layout fixes ====== */
+
+/* Корень должен растягиваться на всю высоту экрана */
+html, body, #root {
+  height: 100%;
+}
+
+/* Трёхколоночная сетка */
+.dw-app-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* запрещаем общий скролл: скролл только у чата */
+  background: transparent;
+}
+
+/* Общие правила колонок */
+.dw-col {
+  height: 100%;
+  overflow: hidden;         /* чтобы внутренний скролл не выходил за рамки */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Боковые панели не скроллятся сами по себе; содержимое внутри может иметь own scroll */
+.dw-col--side {
+  border-left: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Средняя колонка (чат) — единственная со скроллом */
+.dw-col--chat {
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Универсальная прослойка: если внутри чата есть header/footer, контент тянется */
+.dw-col--chat .dw-stretch {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* На мобильных — не ломаем существующую карусель; сетка превращается в одну колонку. 
+   JS-логика свайпа останется работать. */
+@media (max-width: 1023px) {
+  .dw-app-grid {
+    grid-template-columns: 1fr;
+    height: 100dvh;
+    width: 100%;
+  }
+  .dw-col--side {
+    display: none; /* оставляем только центральную колонку, если ваша карусель не перехватывает лэйаут */
+  }
+}
