@@ -3,12 +3,16 @@ import { useEffect, useRef, useState } from "react"
 import clsx from "clsx"
 import { ImageBlock } from "./ImageBlock"
 
+function Thinking(){
+  return <div className="text-ash text-sm mt-1 typing">ДМ думает</div>
+}
+
 export function Chat(){
   const { messages, sendPlayer, pending } = useGameStore()
   const [text, setText] = useState("")
   const endRef = useRef<HTMLDivElement>(null)
 
-  useEffect(()=>{ endRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages.length])
+  useEffect(()=>{ endRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages.length, pending])
 
   const onSubmit = () => {
     const v = text.trim()
@@ -38,6 +42,7 @@ export function Chat(){
             </div>
           </div>
         ))}
+        {pending && <Thinking/>}
         <div ref={endRef}/>
       </div>
       <div className="pt-3">

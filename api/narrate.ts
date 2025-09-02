@@ -7,8 +7,39 @@ const SEC_MODEL = process.env.DW_SEC_MODEL || "qwen/qwen-2.5-72b-instruct"
 
 type UICommand = { cmd: "set_scene"|"show_image"|"show_creature", payload: any }
 
+function stripCodeFences(s:string){
+  return s.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "")
+}
+function extractFirstJsonObject(s:string): string | null {
+  let depth = 0, start = -1
+  for (let i=0;i<s.length;i++){
+    const ch = s[i]
+    if (ch === "{"){
+      if (depth===0) start = i
+      depth++
+    } else if (ch === "}"){
+      depth--
+      if (depth===0 && start>=0){
+        return s.slice(start, i+1)
+      }
+    }
+  }
+  return null
+}
 function safeJSON<T=any>(s: string): T | null {
   try { return JSON.parse(s) as T } catch { return null }
+}
+function parseJsonLoose(s:string){
+  if (!s) return null
+  const stripped = stripCodeFences(s.trim())
+  const direct = safeJSON(stripped)
+  if (direct) return direct
+  const only = extractFirstJsonObject(stripped)
+  if (only){
+    const obj = safeJSON(only)
+    if (obj) return obj
+  }
+  return null
 }
 
 async function openrouterChat(model:string, messages:any[]){
@@ -26,9 +57,9 @@ async function openrouterChat(model:string, messages:any[]){
 }
 
 const DM_SYSTEM = `
-Ты — рассказчик тёмного фэнтези (ДМ). Верни ТОЛЬКО JSON по схеме, без текста снаружи:
+Ты — рассказчик тёмного фэнтези (ДМ). Верни ТОЛЬКО JSON по схеме, без текста снаружи и без тройных кавычек:
 {
-  "to_player": "<1–3 абзаца, стиль паспорта; первая сцена начинаетcя фразой 'Добро пожаловать в Темный мир…'>",
+  "to_player": "<1–3 абзаца, стиль паспорта; первая сцена начинается фразой 'Добро пожаловать в Темный мир…'>",
   "to_ui": [
     { "cmd":"set_scene", "payload": { "scene":"<ru>", "scene_id"?: "<id>" } } |
     { "cmd":"show_image", "payload": { "prompt":"<EN 6–14 слов>", "seed"?: number } } |
@@ -39,8 +70,8 @@ const DM_SYSTEM = `
 Правила:
 - НЕ предлагай вариантов действий (никаких action-меню), если игрок сам не просит.
 - Если secretary.state.scene_changed=false — НЕ меняй локацию и НЕ вызывай show_image сцены; телепорт перепиши как флешбек/видение.
-- Картинка (если нужна) идёт перед текстом; мы сами соблюдём порядок в UI.
 - Картинки только как команды show_image/show_creature с PROMPT (EN 6–14 слов); URL НЕ присылай.
+- Верни чистый JSON-объект. Никаких пояснений, преамбул, \`\`\`, HTML, Markdown.
 `.trim()
 
 const SEC_SYSTEM = `
@@ -57,11 +88,13 @@ const SEC_SYSTEM = `
 Правила:
 - Ставь scene_changed=true только при переходах из паспорта.
 - Даёшь КОРОТКИЕ EN-промты (6–14 слов) без URL; кэш-соль добавит UI.
+- Верни чистый JSON-объект без \`\`\`.
 `.trim()
 
 function validateUI(to_ui:any, scene_changed:boolean){
   const errs:string[] = []
   const out: UICommand[] = []
+  if (to_ui == null) return { ok:true, errs, out } // пустой массив допустим
   if (!Array.isArray(to_ui)) return { ok:false, errs:["to_ui must be array"], out }
   for (const e of to_ui){
     if (!e || typeof e !== "object" || !("cmd" in e) || !("payload" in e)){ errs.push("to_ui item must have cmd/payload"); continue }
@@ -72,6 +105,7 @@ function validateUI(to_ui:any, scene_changed:boolean){
       const wc = e.payload.prompt.trim().split(/\s+/).length
       if (wc<3) errs.push(`${e.cmd} prompt too short`)
       if (wc>18) errs.push(`${e.cmd} prompt too long`)
+      if (/^https?:\/\//i.test(e.payload.prompt)) errs.push(`${e.cmd} prompt must be EN words, not URL`)
     }
     out.push(e as UICommand)
   }
@@ -81,11 +115,11 @@ function validateUI(to_ui:any, scene_changed:boolean){
 function normalizeDM(payload:any, sec:any){
   const errs:string[] = []
   if (!payload || typeof payload!=="object"){ errs.push("DM payload not an object"); return { ok:false, errs, payload } }
-  if (typeof payload.to_player!=="string") errs.push("to_player must be string")
+  if (typeof payload.to_player!=="string" || !payload.to_player.trim()) errs.push("to_player must be non-empty string")
   const sceneChanged = !!(sec?.state?.scene_changed)
   const ui = validateUI(payload.to_ui, sceneChanged)
   if (!ui.ok) errs.push(...ui.errs)
-  // Fallback: if no show_image but scene_changed and we have prompts.scene_en — synthesize one
+  // Fallback: synthesize show_image if scene changed and prompt exists
   const hasShowImage = Array.isArray(payload.to_ui) && payload.to_ui.some((x:any)=>x?.cmd==="show_image")
   const scenePrompt = sec?.state?.prompts?.scene_en
   if (sceneChanged && scenePrompt && !hasShowImage){
@@ -100,38 +134,51 @@ export default async function handler(req:VercelRequest, res:VercelResponse){
   try{
     const { text, state } = req.body || {}
     if (!OPENROUTER_API_KEY){
-      return res.status(200).json({ to_player: "Добро пожаловать в Темный мир… Ветер треплет плащ, дорога зовёт. — Куда теперь?", to_ui: [], to_secretary: { note:"local-stub" } })
+      return res.status(200).json({ to_player: "Добро пожаловать в Темный мир… Ветер треплет плащ, дорога зовёт. — Куда теперь?", to_ui: [], to_secretary: { note:"local-stub" }, __debug:{ stub:true } })
     }
-    // Secretary first
+    // Secretary
     const secRaw = await openrouterChat(SEC_MODEL, [
       { role:"system", content: SEC_SYSTEM },
       { role:"user", content: JSON.stringify({ text, state }) }
     ])
-    const sec = safeJSON(secRaw) ?? { state:{ scene_changed:false }, to_narrator:{}, to_ui_additional:[] }
+    const sec = parseJsonLoose(secRaw) ?? { state:{ scene_changed:false }, to_narrator:{}, to_ui_additional:[] }
 
-    // Narrator with secretary context
+    // Narrator
     const dmRaw = await openrouterChat(DM_MODEL, [
       { role:"system", content: DM_SYSTEM },
       { role:"user", content: JSON.stringify({ text, state, secretary: sec }) }
     ])
 
-    // Try parse + validate; one repair attempt if needed
-    let dm = safeJSON(dmRaw)
+    // Parse & validate
+    let dm = parseJsonLoose(dmRaw)
     let norm = normalizeDM(dm, sec)
-    if (!norm.ok){
-      const repairPrompt = `Верни ТОЛЬКО JSON по схеме из предыдущей инструкции. Исправь ошибки: ${norm.errs.join("; ")}.`
-      const repaired = await openrouterChat(DM_MODEL, [
+    let violations = norm.ok ? [] : norm.errs
+
+    // Up to 2 repair attempts
+    let attempts = 0
+    while (!norm.ok && attempts < 2){
+      attempts++
+      const repairPrompt = `Верни ТОЛЬКО JSON-объект по схеме из предыдущей инструкции. Исправь ошибки: ${violations.join("; ")}. Никаких пояснений, \`\`\` или URL. Исходный ответ: ${dmRaw.slice(0, 4000)}`
+      const repairedRaw = await openrouterChat(DM_MODEL, [
         { role:"system", content: DM_SYSTEM },
         { role:"user", content: repairPrompt }
       ])
-      dm = safeJSON(repaired)
+      dm = parseJsonLoose(repairedRaw)
       norm = normalizeDM(dm, sec)
+      violations = norm.ok ? [] : norm.errs
     }
+
     if (!norm.ok){
-      dm = { to_player: typeof dm==="string" ? dm : "…", to_ui: [], to_secretary: {} }
+      const safe = {
+        to_player: "Тишина тянется, как холодный туман. — Продолжай. Я слушаю.",
+        to_ui: [],
+        to_secretary: {}
+      }
+      return res.status(200).json({ ...safe, __debug:{ secRaw: secRaw.slice(0,4000), dmRaw: dmRaw.slice(0,4000), violations } })
     }
-    res.status(200).json(norm.payload || dm)
+
+    return res.status(200).json({ ...(norm.payload || dm), __debug:{ secRaw: secRaw.slice(0,4000), dmRaw: dmRaw.slice(0,4000), violations } })
   }catch(e:any){
-    res.status(500).json({ error: e.message || "narrate-failed" })
+    return res.status(500).json({ error: e.message || "narrate-failed" })
   }
 }

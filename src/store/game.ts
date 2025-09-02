@@ -34,6 +34,21 @@ export const useGameStore = create<GameState>((set, get)=>({
     }
   },
   sendPlayer: async (text:string)=>{
+    // Dev commands
+    if (text.startsWith("_")){
+      const cmd = text.trim().toLowerCase()
+      if (cmd === "_бросок_20" || cmd === "_roll20"){
+        const n = Math.floor(get().rng()*20)+1
+        set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"system", text: `Dev: d20 = ${n}` }] })
+        return
+      }
+      if (cmd === "_запусти_бой" || cmd === "_start_combat"){
+        set({ enemies: [{ id:"e1", name:"Разбойник-ловкач", rank:"medium", archetype:"trickster", attackDC:14, defenseDC:16, state:"unhurt" } as any] })
+        set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"system", text: "Dev: Бой начат (заглушка). Враг: Разбойник-ловкач." }] })
+        return
+      }
+    }
+
     const before = get().messages
     const id = crypto.randomUUID()
     set({ pending: true, messages: [...before, { id, role:"player", text }] })
