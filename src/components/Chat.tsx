@@ -52,6 +52,7 @@ export function Chat(){
       onSend()
     }
   }
+  
 
   return (
     <div className="absolute inset-0 flex flex-col">
