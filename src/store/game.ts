@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { nanoid } from './nanoid'
-import type { ChatMessage, PendingPhase, ToUICommand } from '@types/index'
+import type { ChatMessage, PendingPhase, ToUICommand } from '../types'
 import { postChat } from '@lib/api'
 import { sanitizeIntro } from '@lib/sanitize'
 
