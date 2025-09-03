@@ -19,7 +19,7 @@ export function Chat(){
       const delta = el.scrollHeight - el.scrollTop - el.clientHeight
       setAtBottom(delta < 80)
     }
-    el.addEventListener("scroll", onScroll, { passive:true })
+    el.addEventListener("scroll", onScroll, { passive:true } as any)
     onScroll()
     return ()=> el.removeEventListener("scroll", onScroll as any)
   }, [])
@@ -47,7 +47,8 @@ export function Chat(){
     setInput("")
   }
 
-  const onKeyDown = (e:React.KeyboardEvent<HTMLTextAreaElement)=>{
+  // Используем типизированный обработчик вместо дженерика внутри сигнатуры — так надёжнее для esbuild.
+  const onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter" && !e.shiftKey){
       e.preventDefault()
       onSend()
