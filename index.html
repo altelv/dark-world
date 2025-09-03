@@ -1,29 +1,51 @@
-<!doctype html><html lang="ru"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Темный Мир — каркас</title><meta name="description" content="Dark World — три колонки: Персонаж • Главная • Инвентарь">
-<link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="./styles.css"></head>
-<body><div id="app"><div class="app"><div class="carousel" id="carousel">
-<section class="panel"><div class="col" id="left"><h2>Персонаж</h2><div class="col-content">
-<div class="badge">v1 Каркас • только UI</div>
-<div class="card"><div class="small">Имя</div><div style="font-weight:700;font-size:18px;">Герой</div><div class="hr"></div>
-<div class="small">Раса / Класс / Перки</div><div>Человек / — / —</div></div>
-<div class="card"><div class="small">Полоски</div><div>HP: 14 • Удача: 3 • Усталость: 0</div></div>
-<div class="card"><div class="small">Навыки (пример)</div><div>Атлетика 4 • Поиск 3 • Магия 0</div></div>
-<div class="card"><div class="small">Палитра (для дизайна)</div><div class="palette">
-<div class="swatch bg" title="bg"></div><div class="swatch panel" title="panel"></div><div class="swatch muted" title="muted"></div>
-<div class="swatch bluegray" title="bluegray"></div><div class="swatch accent" title="accent"></div><div class="swatch danger" title="danger"></div><div class="swatch white" title="white"></div>
-</div></div><div class="small">Левая/правая колонки статичны; скролл — только по центру (на десктопе).</div></div></div></section>
-<section class="panel"><div class="col col--scroll" id="center"><h2>Главная</h2><div class="col-content" id="chat">
-<div class="chat-msg dm">Добро пожаловать в Темный Мир, одинокая душа.</div>
-<div class="chat-msg dm">Это демо-каркас трёх колонок. На десктопе прокручивается только центральная колонка. На мобайле панели свайпаются по горизонтали.</div>
-<div class="chat-msg player">Принял. Бой и d20 будут оверлеями поверх центра.</div>
-<div class="input-wrap"><div class="input"><input placeholder="Напишите что-нибудь… (демо, не отправляет)"/><button class="btn" disabled>📜 Отправить</button></div></div>
-</div></div></section>
-<section class="panel"><div class="col" id="right"><h2>Инвентарь</h2><div class="col-content">
-<div class="card"><div class="small">Слоты (пример)</div><ul style="margin:6px 0 0 18px;">
-<li>Броня — отсутствует</li><li>Левая рука — пусто</li><li>Правая рука — пусто</li><li>Пояс — пусто</li></ul></div>
-<div class="card"><div class="small">Подсказка</div><div>Фиолетовый — для акцентов и кнопок. Белый текст. Красный используем редко.</div></div>
-<div class="card"><a class="link" href="https://github.com/altelv/dark-world" target="_blank" rel="noreferrer">Репозиторий на GitHub</a></div>
-</div></div></section>
-</div><div class="nav-dots" id="dots" aria-hidden="true"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>
-<script src="./script.js"></script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Темный Мир — каркас</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="./styles.css?v=2">
+</head>
+<body>
+  <div id="app">
+    <div class="app">
+      <div class="carousel" id="carousel">
+        <section class="panel">
+          <div class="col" id="left">
+            <h2>Персонаж</h2>
+            <div class="col-content">
+              <div class="badge">v1 Каркас • только UI</div>
+              <div class="card"><div class="small">Имя</div><div style="font-weight:700;font-size:18px;">Герой</div><div class="hr"></div><div class="small">Раса / Класс / Перки</div><div>Человек / — / —</div></div>
+              <div class="card"><div class="small">Полоски</div><div>HP: 14 • Удача: 3 • Усталость: 0</div></div>
+              <div class="card"><div class="small">Навыки (пример)</div><div>Атлетика 4 • Поиск 3 • Магия 0</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="col col--scroll" id="center">
+            <h2>Главная</h2>
+            <div class="col-content" id="chat">
+              <div class="chat-msg dm">Добро пожаловать в Темный Мир, одинокая душа.</div>
+              <div class="chat-msg dm">Десктоп: три колонки рядом. Мобайл: свайповая карусель.</div>
+              <div class="chat-msg player">Ок. Бой и d20 появятся как оверлей поверх этой колонки.</div>
+              <div class="input-wrap"><div class="input"><input placeholder="Напишите что-нибудь… (демо)"/><button class="btn" disabled>📜 Отправить</button></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="col" id="right">
+            <h2>Инвентарь</h2>
+            <div class="col-content">
+              <div class="card"><div class="small">Слоты (пример)</div><ul style="margin:6px 0 0 18px;"><li>Броня — отсутствует</li><li>Левая рука — пусто</li><li>Правая рука — пусто</li><li>Пояс — пусто</li></ul></div>
+              <div class="card"><div class="small">Цвета</div><div class="palette"><div class="swatch bg"></div><div class="swatch panel"></div><div class="swatch muted"></div><div class="swatch bluegray"></div><div class="swatch accent"></div><div class="swatch danger"></div><div class="swatch white"></div></div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="nav-dots" id="dots" aria-hidden="true"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>
+  </div>
+  <script src="./script.js"></script>
+</body>
+</html>
