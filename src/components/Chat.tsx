@@ -45,7 +45,7 @@ export function Chat(){
     await store.sendPlayer(text)
     setInput("")
   }
-  const onKey!!!Down: React.KeyboardEventHandler = (e) => {
+  const onKeyDown: React.KeyboardEventHandler = (e) => {
     if (e.key === "Enter" && !e.shiftKey){
       e.preventDefault()
       onSend()
