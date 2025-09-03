@@ -1,47 +1,65 @@
-export const config = { runtime: "edge" };
-
-// POST /api/chat  → прокси на OpenRouter (ключ берётся из переменной окружения OPENROUTER_API_KEY)
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+// Vercel serverless function to call OpenRouter and return {to_player,to_ui,to_secretary}
+export default async function handler(req: any, res: any){
+  if (req.method === 'OPTIONS'){
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return res.status(200).end()
   }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  try{
+    const { text, world } = req.body || {}
+    const base = process.env.OPENROUTER_BASE || 'https://openrouter.ai/api/v1'
+    const model = process.env.DW_DM_MODEL || 'google/gemini-2.0-flash-lite-001'
+    const apiKey = process.env.OPENROUTER_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'Missing OPENROUTER_API_KEY' })
 
-  let payload: unknown;
-  try {
-    payload = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: { message: "Invalid JSON body" } }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    const system = `You are the Narrator (DM) of a dark fantasy text RPG. 
+You MUST reply as a strict JSON object with keys: to_player (string), to_ui (array of commands), to_secretary (string).
+Never include any other text. 
+Avoid repeating the phrase "Добро пожаловать в Темный мир…" after the very first turn.
+Use 1–3 short paragraphs, rich and moody, Tolkien-like but darker.
+If showing an image, add to_ui: [{ "cmd": "show_image", "payload": { "url": "<direct image url if you have it>" } }].
+If changing scene add: { "cmd":"set_scene", "payload": { "scene": "<ru>", "scene_id":"<id>" } }.
+Keep to the contract exactly.`
+
+    const user = JSON.stringify({
+      world,
+      player_text: text
+    })
+
+    const r = await fetch(base + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://vercel.app',
+        'X-Title': 'Dark World'
+      },
+      body: JSON.stringify({
+        model,
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user }
+        ]
+      })
+    })
+
+    const data = await r.json()
+    if (!r.ok){
+      return res.status(r.status).json({ error: 'OpenRouter error', details: data })
+    }
+    const content = data?.choices?.[0]?.message?.content || '{}'
+    let parsed: any
+    try { parsed = JSON.parse(content) } catch(e){ parsed = { to_player: content, to_ui: [], to_secretary: "" } }
+
+    // Safety: ensure array
+    if (!Array.isArray(parsed.to_ui)) parsed.to_ui = []
+
+    return res.status(200).json(parsed)
+  }catch(e:any){
+    return res.status(500).json({ error: String(e?.message || e) })
   }
-
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: { message: "OPENROUTER_API_KEY is missing" } }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Подставим реферер по домену проекта (полезно для OpenRouter аналитики)
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "vercel.app";
-  const referer = `https://${host}`;
-
-  const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-      "HTTP-Referer": referer,
-      "X-Title": "Dark World",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const text = await upstream.text();
-  return new Response(text, {
-    status: upstream.status,
-    headers: { "Content-Type": "application/json" },
-  });
 }

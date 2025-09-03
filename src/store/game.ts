@@ -1,93 +1,96 @@
-import { create } from "zustand"
-import type { Hero, Message, Enemy, Status } from "@types/common"
-import { mulberry32, seedFromString } from "@utils/prng"
-
-type Phase = "thinking"|"typing"|null
+import { create } from 'zustand'
+import { nanoid } from './nanoid'
+import type { ChatMessage, PendingPhase, ToUICommand } from '@types/index'
+import { postChat } from '@lib/api'
+import { sanitizeIntro } from '@lib/sanitize'
 
 export interface GameState {
-  seed:number; rng:()=>number; hero:Hero; enemies:Enemy[]; messages:Message[]; statuses:Status[];
-  scene:{id:string, name:string}; distance:"melee"|"near"|"far"|"very_far";
-  pendingPhase: Phase;
-  bootstrap:()=>void; sendPlayer:(text:string)=>Promise<void>;
-}
-
-const defaultHero: Hero = {
-  name:"Герой", race:"Человек", gender:"male", bank:46,
-  skills: { acrobatics:12, defense:8, combat:8, athletics:8, endurance:6, medicine:4, focus:6, awareness:6, stealth:6, sleight:4, trade:0, insight:0, performance:0, arcana:0, msense:0, science:0, history:0, nature:0, crafting:6, tactics:6 },
-  caps: {}, pb:4, hp_max:16, hp:16, fatigue:0, luck:0, armorId:"light", shieldId:"light", perks:{}
-}
-
-async function typewriterAppend(get:any, set:any, id:string, full:string){
-  const CPS = 50
-  const STEP = Math.max(1, Math.floor(full.length / Math.max(1, Math.ceil(full.length / CPS))))
-  let shown = 0
-  return new Promise<void>((resolve)=>{
-    const interval = setInterval(()=>{
-      shown = Math.min(full.length, shown + STEP)
-      set((state:any)=>{
-        const msgs = state.messages.map((m:any)=> m.id===id ? { ...m, text: full.slice(0, shown) } : m)
-        return { messages: msgs }
-      })
-      if (shown >= full.length){
-        clearInterval(interval)
-        resolve()
-      }
-    }, 1000 / CPS * STEP)
-  })
+  messages: ChatMessage[]
+  pendingPhase: PendingPhase
+  dmTurns: number
+  world: {
+    scene?: string
+    scene_id?: string
+    firstDmShown: boolean
+  }
+  sendPlayer: (text: string) => Promise<void>
+  pushDM: (text: string) => void
+  pushSystem: (text: string) => void
+  pushImage: (url: string) => void
 }
 
 export const useGameStore = create<GameState>((set, get)=>({
-  seed: seedFromString("dark-world-seed"),
-  rng: mulberry32(seedFromString("dark-world-seed")),
-  hero: defaultHero,
-  enemies: [],
+
   messages: [],
-  statuses: [],
-  scene: { id:"start", name:"Пустошь у тракта" },
-  distance: "near",
   pendingPhase: null,
-  bootstrap: ()=>{
-    const s = get()
-    if (!s.messages.length){
-      set({ messages: [
-        { id: crypto.randomUUID(), role:"dm", text:"Добро пожаловать в Темный мир… Сырая дорога уходит между холмами, запах мокрой листвы звенит в воздухе. Что ты делаешь?" }
-      ] })
+  dmTurns: 0,
+  world: { firstDmShown: false },
+
+  pushSystem: (text) => set((s)=>({
+    messages: [...s.messages, { id: nanoid(), role:'system', text }]
+  })),
+
+  pushDM: (text) => set((s)=>{
+    const sanitized = sanitizeIntro(text, !s.world.firstDmShown)
+    const wasFirst = !s.world.firstDmShown
+    return {
+      messages: [...s.messages, { id: nanoid(), role:'dm', text: sanitized }],
+      dmTurns: s.dmTurns + 1,
+      world: { ...s.world, firstDmShown: s.world.firstDmShown || wasFirst }
+    }
+  }),
+
+  pushImage: (url) => set((s)=>({
+    messages: [...s.messages, { id: nanoid(), role:'image', url }]
+  })),
+
+  sendPlayer: async (text: string) => {
+    set({ pendingPhase: 'thinking', messages: [...get().messages, { id: nanoid(), role:'player', text }] })
+    try {
+      const world = get().world
+      const data = await postChat(text, world)
+
+      // UI команды
+      if (Array.isArray(data.to_ui)) {
+        for (const cmd of data.to_ui as ToUICommand[]) {
+          if (cmd.cmd === 'show_image') {
+            // ожидаем URL в payload.url, иначе игнор
+            if (cmd.payload?.url) get().pushImage(cmd.payload.url)
+          }
+        }
+      }
+
+      // Печать ответа с тайпрайтером
+      set({ pendingPhase: 'typing' })
+      await typewriteDM(data.to_player || '', get, set)
+
+      // Можно применить side-effects world (сцена)
+      if (data.to_ui) {
+        const sc = (data.to_ui as ToUICommand[]).find(c=>c.cmd==='set_scene')
+        if (sc) set((s)=>({ world: { ...s.world, scene: sc.payload?.scene, scene_id: sc.payload?.scene_id } }))
+      }
+
+    } catch (e:any) {
+      set((s)=>({
+        messages: [...s.messages, { id: nanoid(), role:'system', text: 'Ошибка: ' + (e?.message || e) }]
+      }))
+    } finally {
+      set({ pendingPhase: null })
     }
   },
-  sendPlayer: async (text:string)=>{
-    if (text.startsWith("_")){
-      const cmd = text.trim().toLowerCase()
-      if (cmd === "_бросок_20" || cmd === "_roll20"){
-        const n = Math.floor(get().rng()*20)+1
-        set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"system", text: `Dev: d20 = ${n}` }] })
-        return
-      }
-      if (cmd === "_запусти_бой" || cmd === "_start_combat"){
-        set({ enemies: [{ id:"e1", name:"Разбойник-ловкач", rank:"medium", archetype:"trickster", attackDC:14, defenseDC:16, state:"unhurt" } as any] })
-        set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"system", text: "Dev: Бой начат (заглушка). Враг: Разбойник-ловкач." }] })
-        return
-      }
-    }
 
-    const before = get().messages
-    const id = crypto.randomUUID()
-    set({ messages: [...before, { id, role:"player", text }] })
-    set({ pendingPhase: "thinking" })
-
-    try{
-      const res = await fetch("/api/narrate", {
-        method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ text, state: { hero: get().hero, scene: get().scene, enemies: get().enemies } })
-      })
-      const data = await res.json()
-      const toPlayer = data?.to_player || "…"
-
-      const dmId = crypto.randomUUID()
-      set({ messages: [...get().messages, { id: dmId, role:"dm", text: "", meta: data } ] , pendingPhase: "typing" })
-      await typewriterAppend(get, set, dmId, toPlayer)
-      set({ pendingPhase: null })
-    }catch(e:any){
-      set({ messages: [...get().messages, { id: crypto.randomUUID(), role:"system", text: "Сбой рассказчика. Попробуйте ещё раз." }], pendingPhase: null })
-    }
-  }
 }))
+
+async function typewriteDM(full: string, get: any, set: any) {
+  const id = nanoid()
+  set((s:any)=>({ messages: [...s.messages, { id, role:'dm', text: '' }] }))
+  const delay = (ms:number)=> new Promise(r=>setTimeout(r, ms))
+  let buf = ''
+  for (const ch of full) {
+    buf += ch
+    set((s:any)=>({ messages: s.messages.map((m:any)=> m.id===id ? { ...m, text: buf } : m )}))
+    await delay(8) // быстро печатаем, но видно
+  }
+}
+
+// tiny nanoid

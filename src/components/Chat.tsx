@@ -10,7 +10,7 @@ export function Chat(){
   const scrollRef = useRef<HTMLDivElement>(null)
   const [atBottom, setAtBottom] = useState(true)
 
-  const pending = store.pendingPhase // "thinking" | "typing" | null | undefined
+  const pending = store.pendingPhase // "thinking" | "typing" | null
 
   useEffect(()=>{
     const el = scrollRef.current
@@ -19,7 +19,7 @@ export function Chat(){
       const delta = el.scrollHeight - el.scrollTop - el.clientHeight
       setAtBottom(delta < 80)
     }
-    el.addEventListener("scroll", onScroll, { passive:true } as any)
+    el.addEventListener("scroll", onScroll as any, { passive:true } as any)
     onScroll()
     return ()=> el.removeEventListener("scroll", onScroll as any)
   }, [])
@@ -36,7 +36,6 @@ export function Chat(){
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
   }
 
-  // FIX: блокируем кнопку только во время обработки ответа ИИ
   const disabled = pending === "thinking" || pending === "typing"
 
   const onSend = async ()=>{
@@ -47,7 +46,6 @@ export function Chat(){
     setInput("")
   }
 
-  // Используем типизированный обработчик вместо дженерика внутри сигнатуры — так надёжнее для esbuild.
   const onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter" && !e.shiftKey){
       e.preventDefault()
@@ -59,6 +57,13 @@ export function Chat(){
     <div className="absolute inset-0 flex flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto pr-1 space-y-3">
         {store.messages.map(m=>{
+          if (m.role === 'image') {
+            return (
+              <div key={m.id} className="flex w-full items-start">
+                <img src={m.url} className="max-w-full rounded-lg border border-iron" />
+              </div>
+            )
+          }
           const isPlayer = m.role === "player"
           const isSystem = m.role === "system"
           const align = isPlayer ? "items-end" : "items-start"
