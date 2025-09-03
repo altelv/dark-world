@@ -46,7 +46,7 @@ export function Chat(){
     setInput("")
   }
 
-  const onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+  const onKeyDown: React.KeyboardEventHandler = (e) => {
     if (e.key === "Enter" && !e.shiftKey){
       e.preventDefault()
       onSend()
