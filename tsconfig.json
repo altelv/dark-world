@@ -15,20 +15,30 @@
     "isolatedModules": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "baseUrl": ".",
     "paths": {
       "@store/*": [
         "./src/store/*"
       ],
       "@lib/*": [
         "./src/lib/*"
-      ],
-      "@types/*": [
-        "./src/types/*"
       ]
     }
   },
   "include": [
-    "src"
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/styles.css",
+    "src/components/**/*",
+    "src/store/**/*",
+    "src/lib/**/*",
+    "src/types/**/*",
+    "api/**/*"
   ],
-  "references": []
+  "exclude": [
+    "src/pages",
+    "src/server",
+    "src/game",
+    "src/store/devBattle.ts"
+  ]
 }

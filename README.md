@@ -1,12 +1,21 @@
-# Тёмный мир — Vercel-ready
+# TypeScript Scope Patch
 
-## Запуск
-```bash
-npm i
-npm run dev
+This tsconfig narrows the compile scope to your current Vite app and excludes legacy Next/server/game code that causes TS errors.
+
+**Included:**
+- `src/main.tsx`, `src/App.tsx`, `src/styles.css`
+- `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`
+- `api/**` (for Vercel serverless)
+
+**Excluded:**
+- `src/pages`, `src/server`, `src/game`, `src/store/devBattle.ts`
+
+## Extra manual step (if needed)
+If you still import types via an alias in `src/store/game.ts`, replace:
+```ts
+import type { ChatMessage, PendingPhase, ToUICommand } from '@types/index'
 ```
-Переменные окружения:
-- OPENROUTER_API_KEY
-- OPENROUTER_BASE (опц., по умолчанию https://openrouter.ai/api/v1)
-- DW_DM_MODEL (по умолчанию google/gemini-2.0-flash-lite-001)
-- DW_SEC_MODEL (по умолчанию qwen/qwen-2.5-72b-instruct)
+with
+```ts
+import type { ChatMessage, PendingPhase, ToUICommand } from '../types'
+```
