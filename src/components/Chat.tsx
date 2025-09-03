@@ -122,7 +122,9 @@ export function Chat(){
           →
         </button>
       </form>
-    </div>
+    </div> 
+
   )
 }
+export default Chat;
 
