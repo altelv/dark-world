@@ -10,7 +10,7 @@ export function Chat(){
   const scrollRef = useRef<HTMLDivElement>(null)
   const [atBottom, setAtBottom] = useState(true)
 
-  const pending = store.pendingPhase // "thinking" | "typing" | null
+  const pending = store.pendingPhase // "thinking" | "typing" | null | undefined
 
   useEffect(()=>{
     const el = scrollRef.current
@@ -36,7 +36,8 @@ export function Chat(){
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
   }
 
-  const disabled = pending !== null
+  // FIX: блокируем кнопку только во время обработки ответа ИИ
+  const disabled = pending === "thinking" || pending === "typing"
 
   const onSend = async ()=>{
     const text = input.trim()
@@ -46,7 +47,7 @@ export function Chat(){
     setInput("")
   }
 
-  const onKeyDown = (e:React.KeyboardEvent<HTMLTextAreaElement>)=>{
+  const onKeyDown = (e:React.KeyboardEvent<HTMLTextAreaElement)=>{
     if (e.key === "Enter" && !e.shiftKey){
       e.preventDefault()
       onSend()
@@ -123,8 +124,6 @@ export function Chat(){
         </button>
       </form>
     </div> 
-
   )
 }
 export default Chat;
-

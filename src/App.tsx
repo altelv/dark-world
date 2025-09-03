@@ -1,30 +1,28 @@
-// DW APP — hard replace to avoid missing imports.
-// ЗАМЕНИТЕ src/App.tsx ЭТИМ ФАЙЛОМ.
-
+// DW PATCH: restore 3-column layout and proper Chat container.
 import React from "react";
-import Chat from "./components/Chat"; // поправьте путь, если у вас иначе
-import "./styles/layout.css";
+import CharacterPanel from "./components/CharacterPanel";
+import InventoryPanel from "./components/InventoryPanel";
+import Chat from "./components/Chat";
 
 export default function App() {
   return (
-    <div className="dw-app-grid">
-      <aside className="dw-col dw-col--side">
-        <div className="dw-side-wrap">
-          <h2 className="dw-side-title">Персонаж</h2>
-          <div id="character-mount" className="dw-side-body" />
+    <div className="grid grid-cols-3 h-screen w-screen overflow-hidden">
+      {/* Левая панель (персонаж) */}
+      <aside className="h-full overflow-hidden border-r border-white/5">
+        <div className="h-full overflow-y-auto px-2 py-3">
+          <CharacterPanel />
         </div>
       </aside>
 
-      <main className="dw-col dw-col--chat">
-        <div className="dw-stretch">
-          <Chat />
-        </div>
+      {/* Центральная панель (чат/рассказ) */}
+      <main className="relative h-full overflow-hidden">
+        <Chat />
       </main>
 
-      <aside className="dw-col dw-col--side">
-        <div className="dw-side-wrap">
-          <h2 className="dw-side-title">Инвентарь</h2>
-          <div id="inventory-mount" className="dw-side-body" />
+      {/* Правая панель (инвентарь) */}
+      <aside className="h-full overflow-hidden border-l border-white/5">
+        <div className="h-full overflow-y-auto px-2 py-3">
+          <InventoryPanel />
         </div>
       </aside>
     </div>
