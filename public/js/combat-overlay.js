@@ -12,6 +12,7 @@ const ASSETS = {
   hero: "/assets/combat/hero.png",
   enemy: "/assets/combat/enemy.png",
   boss: "/assets/combat/boss.png",
+  
 };
 
 const state = {
