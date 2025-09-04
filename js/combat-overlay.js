@@ -1,11 +1,3 @@
-/**
- * Dark World — Combat Overlay (SVG) bootstrap
- * - Auto-loads and injects combat-overlay.svg inline
- * - Computes camera center from #board BBox (no magic numbers)
- * - Highlights allowed moves per v3 + your scheme: 1↑, 2↑, 1←, 1→, 4 diagonals (±1,±1)
- * - Dispatches semantic events for actions: dw:combat:action {detail:{kind,...}}
- * - Robust to slightly different SVGs (paired with svg-migrate.js)
- */
 (function () {
   const BOOT_NS = "DWCombatOverlay";
   if (window[BOOT_NS]) return; // singleton
@@ -16,22 +8,17 @@
     cam: null,
     board: null,
     center: { x: 0, y: 0 },
-    facing: 0, // 0: up, 1: right, 2: down, 3: left
-    hero: { x: 0, y: 0 }, // logical grid pos (requires data-x/y on cells)
+    facing: 0,
+    hero: { x: 0, y: 0 },
   };
 
   function log(...args) { console.log("[CombatOverlay]", ...args); }
-
-  function dispatch(name, detail) {
-    const ev = new CustomEvent(name, { detail });
-    window.dispatchEvent(ev);
-  }
+  function dispatch(name, detail) { window.dispatchEvent(new CustomEvent(name, { detail })); }
 
   async function loadSVGInline(url) {
     const resp = await fetch(url, { cache: "no-store" });
     if (!resp.ok) throw new Error("Failed to load SVG: " + resp.status);
     const text = await resp.text();
-    // create DOM from text
     const div = document.createElement("div");
     div.innerHTML = text.trim();
     const svg = div.querySelector("svg");
@@ -40,36 +27,33 @@
     return svg;
   }
 
-  function computeBoardCenter() {
-    // Prefer #board; fallback to viewBox center; else bbox of svg
-    const board = state.svg.querySelector("#board") || state.svg;
-    const vb = (board.getAttribute("viewBox") || state.svg.getAttribute("viewBox") || "").split(/\s+/).map(Number);
-    if (vb.length === 4 && vb.every(n => !isNaN(n))) {
-      const [x, y, w, h] = vb;
-      return { x: x + w / 2, y: y + h / 2 };
+  function computeBoardCenter(svg) {
+    const board = svg.querySelector("#board") || svg;
+    const vbSrc = board.getAttribute("viewBox") || svg.getAttribute("viewBox");
+    if (vbSrc) {
+      const vb = vbSrc.split(/\s+/).map(Number);
+      if (vb.length === 4 && vb.every(n => !isNaN(n))) {
+        const [x, y, w, h] = vb;
+        return { x: x + w / 2, y: y + h / 2 };
+      }
     }
     const bbox = (board.getBBox && board.getBBox()) ? board.getBBox() : { x: 0, y: 0, width: 100, height: 100 };
     return { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
   }
 
-  // Rotate a vector (dx,dy) by current facing (multiples of 90°)
   function rotateVec(dx, dy, facing) {
     const f = ((facing % 4) + 4) % 4;
     switch (f) {
-      case 0: return { dx, dy };        // up
-      case 1: return { dx: dy, dy: -dx };   // right
-      case 2: return { dx: -dx, dy: -dy };  // down
-      case 3: return { dx: -dy, dy: dx };   // left
+      case 0: return { dx, dy };
+      case 1: return { dx: dy, dy: -dx };
+      case 2: return { dx: -dx, dy: -dy };
+      case 3: return { dx: -dy, dy: dx };
       default: return { dx, dy };
     }
   }
 
   function getCell(x, y) {
-    // Expect cells have data-x / data-y; else try rects in order (fallback is best-effort)
-    const sel = state.svg.querySelector(`#cells [data-x="${x}"][data-y="${y}"]`);
-    if (sel) return sel;
-    // fallback: try to find nth child (not ideal but graceful)
-    return null;
+    return state.svg.querySelector(`#cells [data-x="${x}"][data-y="${y}"]`);
   }
 
   function clearHighlights() {
@@ -78,8 +62,8 @@
   }
 
   function highlightMoves() {
+    if (!state.svg) return;
     clearHighlights();
-    // Allowed base offsets (before rotation): up(0,+1), up2(0,+2), left(-1,0), right(+1,0), diagonals(±1,±1)
     const offs = [
       { dx: 0, dy: +1 },
       { dx: 0, dy: +2 },
@@ -100,13 +84,11 @@
   }
 
   function rotateCamera(dir) {
-    // dir: +1 right, -1 left
     state.facing = ((state.facing + (dir > 0 ? 1 : -1)) % 4 + 4) % 4;
     const angle = state.facing * 90;
     if (state.cam) {
       const c = state.center;
-      const tr = `rotate(${angle} ${c.x} ${c.y})`;
-      state.cam.setAttribute("transform", tr);
+      state.cam.setAttribute("transform", `rotate(${angle} ${c.x} ${c.y})`);
     }
     highlightMoves();
   }
@@ -138,7 +120,6 @@
   }
 
   function bindButtons() {
-    // Delegate clicks from inside SVG
     state.svg.addEventListener("click", (e) => {
       const target = e.target.closest("[id^='btn_']");
       if (!target) return;
@@ -150,9 +131,17 @@
     });
   }
 
+  function ensureMigrate() {
+    if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
+      window.DWSVGMigrate.run(state.svg);
+    }
+  }
+
   async function init() {
     try {
-      // container
+      // idempotent
+      if (state.root) return;
+
       const root = document.createElement("div");
       root.id = "dw-combat-root";
       root.style.position = "relative";
@@ -160,32 +149,25 @@
       document.body.appendChild(root);
       state.root = root;
 
-      // load + attach svg
       state.svg = await loadSVGInline("combat-overlay.svg");
       root.appendChild(state.svg);
 
-      // migrate on the fly (rename ids, remove duplicates, etc.)
-      if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
-        window.DWSVGMigrate.run(state.svg);
-      }
-
-      // pick cam and board
       state.cam = state.svg.querySelector("#cam") || state.svg;
       state.board = state.svg.querySelector("#board") || state.svg;
-      state.center = computeBoardCenter();
+      state.center = computeBoardCenter(state.svg);
 
+      ensureMigrate();
       ensurePointerCSS();
       bindButtons();
       highlightMoves();
 
-      // Expose small API
       window[BOOT_NS] = {
         rotateLeft: () => rotateCamera(-1),
         rotateRight: () => rotateCamera(+1),
         highlightMoves,
         getFacing: () => state.facing,
         setHeroPos: (x, y) => { state.hero.x = x|0; state.hero.y = y|0; highlightMoves(); },
-        setFacing: (f) => { state.facing = (f|0)%4; rotateCamera(0); },
+        setFacing: (f) => { state.facing = (f|0)%4; const prev = state.facing; rotateCamera(0); },
       };
 
       log("Overlay ready");
@@ -195,5 +177,10 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  // Run now if DOM is already ready; otherwise wait
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    init();
+  } else {
+    document.addEventListener("DOMContentLoaded", init);
+  }
 })();

@@ -58,7 +58,7 @@
   </div>
 
   <!-- Debug floating opener (inline fallback onclick) -->
-  <button id=""open-combat"" title="Открыть бой" data-legacy="1" title="Legacy overlay disabled" style="position:fixed;right:14px;bottom:14px;z-index:90;border-radius:999px;padding:10px 14px;border:none;background:#7a57c6;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.35)">Бой</button>
+  <button id="open-combat" title="Открыть бой" data-legacy="1" title="Legacy overlay disabled" style="position:fixed;right:14px;bottom:14px;z-index:90;border-radius:999px;padding:10px 14px;border:none;background:#7a57c6;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.35)">Бой</button>
 
   <!-- Combat Overlay -->
   <div id="combatOverlay" class="combat hidden" aria-hidden="true">
@@ -165,7 +165,11 @@
   <!-- External scripts -->
  
   <!-- legacy: <script src="blocks/combat/combat.js?v=6"></script> -->
-  <script type="module" src="/js/combat-overlay.js"></script>
-  
+
+  <!-- Combat (SVG) runtime -->
+  <script src="js/svg-migrate.js"></script>
+  <script src="js/combat-overlay.js"></script>
+  <script src="js/combat-logic.js"></script>
+
 </body>
 </html>
