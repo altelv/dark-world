@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Темный Мир — каркас + БойБлок v1</title>
-  <link rel="stylesheet" href="./styles.css?v=2">
-  <link rel="stylesheet" href="blocks/combat/combat.css?v=1">
+  <link rel="stylesheet" href="./styles.css?v=3">
+  <link rel="stylesheet" href="blocks/combat/combat.css?v=3">
 </head>
 <body>
   <div id="app">
@@ -67,12 +67,16 @@
         <div class="combat__tools">
           <button class="icon" id="btnTurnLeft" title="Повернуть налево">⟲</button>
           <button class="icon" id="btnTurnRight" title="Повернуть направо">⟳</button>
+          <button class="icon" id="btnRollback" title="Откатить ход">↺</button>
           <button class="icon" id="btnCloseCombat" title="Закрыть бой">✕</button>
         </div>
       </header>
 
       <div class="combat__board">
-        <div class="board" id="board"></div>
+        <div class="board" id="board">
+          <!-- hero sprite overlay -->
+          <div class="hero-sprite" id="heroSprite"><span>Г</span></div>
+        </div>
         <aside class="side">
           <div class="side__section">
             <div class="small">Основные</div>
@@ -113,7 +117,7 @@
     </div>
   </div>
 
-  <script src="./script.js?v=2" defer></script>
-  <script src="blocks/combat/combat.js?v=2" defer></script>
+  <script src="./script.js?v=3" defer></script>
+  <script src="blocks/combat/combat.js?v=3" defer></script>
 </body>
 </html>
