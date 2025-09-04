@@ -1,17 +1,20 @@
-// js/combat-overlay.js — adaptive overlay (root-based)
-// No dependencies. Works on a plain static site.
-// Loads /combat-overlay.svg and wires counters/actions. Scales to viewport.
+// js/combat-overlay.js — overlay with events + highlights (v1)
+// Based on the previous adaptive version. Drop-in replacement.
+//
+// Emits events: 'combat:open', 'combat:end', 'combat:close', 'combat:finish'
+// Highlight: adjacent cells available for movement while MOVE > 0
 
 const ASSETS = {
   hero: "/assets/combat/hero.png",
   enemy: "/assets/combat/enemy.png",
-  boss: "/assets/combat/boss.png",
+  boss:  "/assets/combat/boss.png",
 };
 
 // helpers
 const qs  = (r,s)=> (r||document).querySelector(s);
 const qsa = (r,s)=> Array.from((r||document).querySelectorAll(s));
 const svgNS = tag => document.createElementNS("http://www.w3.org/2000/svg", tag);
+const dispatch = (name, detail={}) => window.dispatchEvent(new CustomEvent(name,{ detail }));
 
 // state
 const state = {
@@ -24,7 +27,7 @@ const state = {
     { id:"e1", kind:"enemy", name:"Гоблин-лучник", x:-1, y:3, pips:3 },
     { id:"b1", kind:"boss",  name:"Кровавый череп", x: 1, y:3, pips:5 },
   ],
-  options: { showRangerPrecise: false } // «Меткий выстрел» скрыт
+  options: { rangerPrecise: false } // «Меткий выстрел» скрыт
 };
 
 // asset placement offsets (relative to top-left corner of cell rect)
@@ -36,11 +39,12 @@ const OFFSETS = {
 
 // DOM refs
 let $wrap=null, $svg=null, $cam=null, $cells=null;
+let $sprites=null, $hl=null; // highlights layer
 let cellMap = new Map();
 let prevDocOverflow = ""; // to restore body scroll
 
 // Public API
-window.CombatOverlay = { open, close };
+window.CombatOverlay = { open, close, finish: finishBattle };
 
 // Auto-bind opener
 window.addEventListener("DOMContentLoaded", () => {
@@ -83,7 +87,7 @@ function loadOverlay(){
         s.flexShrink = "0";
       }
 
-      window.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+      window.addEventListener("keydown", e => { if (e.key === "Escape") close(true); });
       return wrap;
     });
 }
@@ -93,17 +97,20 @@ function open(){
   ensure.then(w=>{
     $wrap = w;
     $svg  = qs($wrap, "svg");
-    $cam  = qs($wrap, "#cam");
+    $cam  = qs($wrap, "#cam") || $svg; // fallback
     $cells = qsa($wrap, '#cells rect[id^="cell_"]');
-    if(!$svg || !$cam || !$cells.length){
+    $sprites = qs($wrap, "#sprites");
+    if(!$svg || !$cam || !$cells.length || !$sprites){
       console.error("Combat overlay: SVG anchors not found. Check combat-overlay.svg ids.");
       $wrap.style.display = "flex";
       return;
     }
     buildCellMap();
+    ensureHL();
     setUpUI();
     mountSprites();
     resetCounters();
+    updateHighlights(); // initial
 
     // hide «Меткий выстрел»
     const precise = qs($wrap, "#btn_ranger_precise");
@@ -115,14 +122,23 @@ function open(){
     $wrap.style.alignItems = "flex-start";
     prevDocOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
+
+    // emit open
+    dispatch("combat:open", {
+      hero: { x: state.hero.x, y: state.hero.y },
+      enemies: state.enemies.map(e=>({ id:e.id, kind:e.kind, name:e.name, x:e.x, y:e.y, pips:e.pips })),
+      options: state.options
+    });
   });
 }
 
-function close(){
+function close(byEsc=false){
   if($wrap) $wrap.style.display = "none";
   document.documentElement.style.overflow = prevDocOverflow || "";
+  dispatch("combat:close", { byEsc, battle_turns_total: state.turnsTotal });
 }
 
+// useful map
 function buildCellMap(){
   cellMap.clear();
   for(const r of $cells){
@@ -132,6 +148,10 @@ function buildCellMap(){
       cellMap.set(`${x},${y}`, { x, y, rect:r });
     }
   }
+}
+
+function enemyAt(x,y){
+  return state.enemies.find(e=> e.x===x && e.y===y);
 }
 
 function placeImage(kind, gx, gy){
@@ -190,18 +210,16 @@ function addPipsAndName(group, pips, name, gx, gy){
 }
 
 function mountSprites(){
-  const $sprites = qs($wrap, "#sprites");
-  if(!$sprites) return;
   while($sprites.firstChild) $sprites.removeChild($sprites.firstChild);
 
-  const gh = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  const gh = svgNS("g");
   gh.setAttribute("id", "sprite_hero");
   const hi = placeImage("hero", state.hero.x, state.hero.y);
   if(hi) gh.appendChild(hi);
   $sprites.appendChild(gh);
 
   for(const e of state.enemies){
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const g = svgNS("g");
     g.setAttribute("id", `sprite_${e.id}`);
     const img = placeImage(e.kind, e.x, e.y);
     if(img) g.appendChild(img);
@@ -217,6 +235,7 @@ function resetCounters(){
   updateDefenseBadge();
   setDraftHint("Опишите ход... (черновик заполняется автоматически)");
   state.snapshot = JSON.parse(JSON.stringify(state));
+  updateHighlights();
 }
 
 function setDraftHint(text){
@@ -242,6 +261,59 @@ function updateDefenseBadge(){
   const b = qs($wrap, "#badge_defense");
   if(b) b.style.display = state.hero.defense ? "block" : "none";
 }
+
+// ------- Highlights --------
+function ensureHL(){
+  $hl = qs($wrap, "#highlights");
+  if(!$hl){
+    $hl = svgNS("g");
+    $hl.setAttribute("id", "highlights");
+    // вставим над клетками и под спрайтами
+    $sprites.parentNode.insertBefore($hl, $sprites);
+  }
+}
+
+function clearHighlights(){
+  if($hl) while($hl.firstChild) $hl.removeChild($hl.firstChild);
+}
+
+function highlightCellRect(cell, {fill="#3B4B60", opacity=0.85, stroke="#7A57C6", strokeWidth=0}={}){
+  const r = svgNS("rect");
+  r.setAttribute("x", cell.rect.getAttribute("x"));
+  r.setAttribute("y", cell.rect.getAttribute("y"));
+  r.setAttribute("width", cell.rect.getAttribute("width"));
+  r.setAttribute("height", cell.rect.getAttribute("height"));
+  r.setAttribute("rx", cell.rect.getAttribute("rx") || 8);
+  r.setAttribute("ry", cell.rect.getAttribute("ry") || 8);
+  r.setAttribute("fill", fill);
+  r.setAttribute("opacity", opacity);
+  if(strokeWidth>0){
+    r.setAttribute("stroke", stroke);
+    r.setAttribute("stroke-width", strokeWidth);
+  }
+  r.style.pointerEvents = "none";
+  $hl.appendChild(r);
+}
+
+function updateHighlights(){
+  clearHighlights();
+  if(state.move<=0) return;
+  const dirs = [
+    [-1,-1],[0,-1],[1,-1],
+    [-1, 0],        [1, 0],
+    [-1, 1],[0, 1],[1, 1]
+  ];
+  for(const [dx,dy] of dirs){
+    const x = state.hero.x + dx;
+    const y = state.hero.y + dy;
+    const key = `${x},${y}`;
+    if(!cellMap.has(key)) continue;
+    if(enemyAt(x,y)) continue; // не подсказываем ход на занятую клетку
+    const cell = cellMap.get(key);
+    highlightCellRect(cell, { fill:"#313A49", opacity:0.95, stroke:"#7A57C6", strokeWidth:0 });
+  }
+}
+// ---------------------------
 
 function setupButtons(){
   const bAtk = qs($wrap, "#btn_ATTAK");
@@ -294,7 +366,7 @@ function setupButtons(){
       battle_turns_total: state.turnsTotal,
       combat_flags: { defense: state.hero.defense }
     };
-    window.dispatchEvent(new CustomEvent("combat:end", { detail }));
+    dispatch("combat:end", detail);
     resetCounters();
   });
 
@@ -306,6 +378,7 @@ function setupButtons(){
     updateCounters();
     updateDefenseBadge();
     setDraftHint(state.draft.join(". "));
+    updateHighlights();
   });
 
   // Camera rotation
@@ -331,12 +404,13 @@ function setUpUI(){
       const y = +r.getAttribute("data-y");
       const dx = Math.abs(x - state.hero.x);
       const dy = Math.abs(y - state.hero.y);
-      if((dx<=1 && dy<=1) && !(dx===0 && dy===0)){
+      if((dx<=1 && dy<=1) && !(dx===0 && dy===0) && !enemyAt(x,y)){
         state.hero.x = x; state.hero.y = y;
         state.move -= 1;
         pushDraft(`Сместился к клетке (${x}, ${y})`);
         mountSprites();
         updateCounters();
+        updateHighlights();
       }
     });
   });
@@ -353,4 +427,16 @@ function addFloatingOpener(){
   fab.textContent = "Бой";
   fab.addEventListener("click", open);
   document.body.appendChild(fab);
+}
+
+// External end-of-battle API
+function finishBattle(extra={}){
+  // compute suggested fatigue: +1 per 5 turns, capped at 3
+  const suggested_fatigue_gain = Math.min(3, Math.floor(state.turnsTotal/5));
+  dispatch("combat:finish", {
+    battle_turns_total: state.turnsTotal,
+    suggested_fatigue_gain,
+    ...extra
+  });
+  close(false);
 }
