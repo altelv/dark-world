@@ -1,7 +1,6 @@
-
-// js/combat-overlay.js (root-based version)
+// js/combat-overlay.js — adaptive overlay (root-based)
 // No dependencies. Works on a plain static site.
-// It loads /combat-overlay.svg and wires the buttons and counters.
+// Loads /combat-overlay.svg and wires counters/actions. Scales to viewport.
 
 const ASSETS = {
   hero: "/assets/combat/hero.png",
@@ -9,12 +8,12 @@ const ASSETS = {
   boss: "/assets/combat/boss.png",
 };
 
-// --- tiny helpers
+// helpers
 const qs  = (r,s)=> (r||document).querySelector(s);
 const qsa = (r,s)=> Array.from((r||document).querySelectorAll(s));
 const svgNS = tag => document.createElementNS("http://www.w3.org/2000/svg", tag);
 
-// --- state
+// state
 const state = {
   hero: { x: 0, y: 0, defense: false },
   atk: 1, move: 1, simple: 1,
@@ -25,24 +24,25 @@ const state = {
     { id:"e1", kind:"enemy", name:"Гоблин-лучник", x:-1, y:3, pips:3 },
     { id:"b1", kind:"boss",  name:"Кровавый череп", x: 1, y:3, pips:5 },
   ],
-  options: { showRangerPrecise: false } // по задаче «Меткий выстрел» скрыт
+  options: { showRangerPrecise: false } // «Меткий выстрел» скрыт
 };
 
-// asset placement offsets (relative to top-left of the cell rect)
+// asset placement offsets (relative to top-left corner of cell rect)
 const OFFSETS = {
   hero: { dx:-16, dy:-57, w:96, h:112 },
   enemy:{ dx:-15, dy:-39, w:96, h:112 },
   boss: { dx:-16, dy:-51, w:96, h:112 },
 };
 
-// --- DOM refs (filled on open)
+// DOM refs
 let $wrap=null, $svg=null, $cam=null, $cells=null;
 let cellMap = new Map();
+let prevDocOverflow = ""; // to restore body scroll
 
 // Public API
 window.CombatOverlay = { open, close };
 
-// auto-bind to a button if present; else show a floating FAB
+// Auto-bind opener
 window.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("open-combat") || document.getElementById("dev-open-battle");
   if(btn) btn.addEventListener("click", open);
@@ -56,11 +56,34 @@ function loadOverlay(){
       const wrap = document.createElement("div");
       wrap.id = "combat-overlay-wrap";
       Object.assign(wrap.style, {
-        position:"fixed", inset:"0", zIndex:"9999", display:"none"
+        position: "fixed",
+        inset: "0",
+        zIndex: "9999",
+        display: "none",
+        overflow: "auto",      // internal scroll if needed
+        padding: "16px",
+        boxSizing: "border-box",
+        background: "transparent",
+        justifyContent: "center",
+        alignItems: "flex-start",
       });
       wrap.innerHTML = html;
       document.body.appendChild(wrap);
-      window.addEventListener("keydown", e=>{ if(e.key==="Escape") close(); });
+
+      // Adaptive sizing of SVG
+      const svgEl = wrap.querySelector("svg");
+      if (svgEl) {
+        const s = svgEl.style;
+        s.display    = "block";
+        s.width      = "920px"; // base width of the design
+        s.maxWidth   = "96vw";
+        s.height     = "auto";
+        s.maxHeight  = "94vh";
+        s.margin     = "2vh auto";
+        s.flexShrink = "0";
+      }
+
+      window.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
       return wrap;
     });
 }
@@ -74,22 +97,31 @@ function open(){
     $cells = qsa($wrap, '#cells rect[id^="cell_"]');
     if(!$svg || !$cam || !$cells.length){
       console.error("Combat overlay: SVG anchors not found. Check combat-overlay.svg ids.");
-      $wrap.style.display = "block";
+      $wrap.style.display = "flex";
       return;
     }
     buildCellMap();
     setUpUI();
     mountSprites();
     resetCounters();
+
     // hide «Меткий выстрел»
     const precise = qs($wrap, "#btn_ranger_precise");
     if(precise) precise.classList.add("hidden");
-    // show
-    $wrap.style.display = "block";
+
+    // show and block page scroll
+    $wrap.style.display = "flex";
+    $wrap.style.justifyContent = "center";
+    $wrap.style.alignItems = "flex-start";
+    prevDocOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
   });
 }
 
-function close(){ if($wrap) $wrap.style.display = "none"; }
+function close(){
+  if($wrap) $wrap.style.display = "none";
+  document.documentElement.style.overflow = prevDocOverflow || "";
+}
 
 function buildCellMap(){
   cellMap.clear();
@@ -162,14 +194,14 @@ function mountSprites(){
   if(!$sprites) return;
   while($sprites.firstChild) $sprites.removeChild($sprites.firstChild);
 
-  const gh = svgNS("g");
+  const gh = document.createElementNS("http://www.w3.org/2000/svg", "g");
   gh.setAttribute("id", "sprite_hero");
   const hi = placeImage("hero", state.hero.x, state.hero.y);
   if(hi) gh.appendChild(hi);
   $sprites.appendChild(gh);
 
   for(const e of state.enemies){
-    const g = svgNS("g");
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("id", `sprite_${e.id}`);
     const img = placeImage(e.kind, e.x, e.y);
     if(img) g.appendChild(img);
@@ -201,10 +233,6 @@ function updateCounters(){
   const ta = qs($wrap, "#counter_atk text");
   const tm = qs($wrap, "#counter_move text");
   const ts = qs($wrap, "#counter_simple text");
-  if(ta) ta.textContent = `АТК ${1-state.atk?0:state.atk}/1`.replace("1-","");
-  if(tm) tm.textContent = `ДВИЖ ${1-state.move?0:state.move}/1`.replace("1-","");
-  if(ts) ts.textContent = `ПРОСТ ${1-state.simple?0:state.simple}/1`.replace("1-","");
-  // better: direct values
   if(ta) ta.textContent = `АТК ${state.atk}/1`;
   if(tm) tm.textContent = `ДВИЖ ${state.move}/1`;
   if(ts) ts.textContent = `ПРОСТ ${state.simple}/1`;
@@ -282,12 +310,14 @@ function setupButtons(){
 
   // Camera rotation
   const boardRect = qs($wrap, "#board rect");
-  const cx = +boardRect.getAttribute("x") + (+boardRect.getAttribute("width"))/2;
-  const cy = +boardRect.getAttribute("y") + (+boardRect.getAttribute("height"))/2;
-  let angle = 0;
-  const apply = ()=> $cam && $cam.setAttribute("transform", `rotate(${angle} ${cx} ${cy})`);
-  qs($wrap, "#btn_turn_left")?.addEventListener("click", ()=>{ angle -= 90; apply(); });
-  qs($wrap, "#btn_turn_right")?.addEventListener("click", ()=>{ angle += 90; apply(); });
+  if(boardRect){
+    const cx = +boardRect.getAttribute("x") + (+boardRect.getAttribute("width"))/2;
+    const cy = +boardRect.getAttribute("y") + (+boardRect.getAttribute("height"))/2;
+    let angle = 0;
+    const apply = ()=> $cam && $cam.setAttribute("transform", `rotate(${angle} ${cx} ${cy})`);
+    qs($wrap, "#btn_turn_left")?.addEventListener("click", ()=>{ angle -= 90; apply(); });
+    qs($wrap, "#btn_turn_right")?.addEventListener("click", ()=>{ angle += 90; apply(); });
+  }
 }
 
 function setUpUI(){
