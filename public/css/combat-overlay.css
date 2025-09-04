@@ -1,6 +1,0 @@
-
-/* Dark World — Combat Overlay (v1.3.3) CSS */
-#combat-overlay { overscroll-behavior: contain; }
-#combat-overlay svg .clickable { cursor: pointer; }
-#combat-overlay svg #cells rect.hl-move { outline: 2px solid rgba(122,87,198,0.9); outline-offset: -2px; }
-#combat-overlay svg #cells rect.hl-target { outline: 2px dashed rgba(122,87,198,0.9); outline-offset: -2px; }
