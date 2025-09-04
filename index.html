@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Темный Мир — каркас + БойБлок v1</title>
-  <link rel="stylesheet" href="./styles.css?v=3">
-  <link rel="stylesheet" href="blocks/combat/combat.css?v=3">
+  <link rel="stylesheet" href="./styles.css?v=4">
+  <link rel="stylesheet" href="blocks/combat/combat.css?v=4">
 </head>
 <body>
   <div id="app">
@@ -55,7 +55,7 @@
 
   <!-- Combat Overlay -->
   <div id="combatOverlay" class="combat hidden" aria-hidden="true">
-    <div class="combat__wrap">
+    <div class="combat__wrap combat--vertical">
       <header class="combat__header">
         <div class="combat__title">Бой</div>
         <div class="combat__counters">
@@ -73,12 +73,17 @@
       </header>
 
       <div class="combat__board">
-        <div class="board" id="board">
-          <!-- hero sprite overlay -->
-          <div class="hero-sprite" id="heroSprite"><span>Г</span></div>
+        <div class="board-wrap">
+          <div class="board" id="board">
+            <div class="sprites" id="sprites">
+              <div class="sprite hero" id="heroSprite"><span>Г</span></div>
+              <!-- enemy sprites go here -->
+            </div>
+          </div>
         </div>
-        <aside class="side">
-          <div class="side__section">
+
+        <div class="actions-bar">
+          <div class="actions-row">
             <div class="small">Основные</div>
             <div class="actions">
               <button class="btn action" id="actMelee">Ближняя</button>
@@ -88,7 +93,7 @@
               <button class="btn action" id="actRangerPrecise" title="Рейнджер: АТК+ПРОСТ, игнор физ. брони">Меткий выстрел</button>
             </div>
           </div>
-          <div class="side__section">
+          <div class="actions-row">
             <div class="small">Простые</div>
             <div class="actions">
               <button class="btn action" id="actThrow">Метнуть</button>
@@ -96,7 +101,7 @@
               <button class="btn action" id="actBandage">Перевязка</button>
             </div>
           </div>
-          <div class="side__section">
+          <div class="actions-row">
             <div class="small">Движение</div>
             <div class="moves">
               <button class="btn move" data-mv="back">Назад</button>
@@ -107,7 +112,7 @@
               <button class="btn move" data-mv="right">Вправо</button>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
 
       <div class="combat__footer">
@@ -117,7 +122,7 @@
     </div>
   </div>
 
-  <script src="./script.js?v=3" defer></script>
-  <script src="blocks/combat/combat.js?v=3" defer></script>
+  <script src="./script.js?v=4" defer></script>
+  <script src="blocks/combat/combat.js?v=4" defer></script>
 </body>
 </html>
