@@ -1,7 +1,10 @@
-// js/combat-overlay.js — v1.2 events + highlights + camera/orientation mapping
-// Hero stays in screen cell (0,0). World pans/rotates (camera).
-// Movement (MOVE=1): back 1; back-diag; left/right 1; forward 2; forward-diag.
-// Emits: combat:open, combat:end, combat:close, combat:finish
+// js/combat-overlay.js — v1.3
+// Changes:
+// - Forward movement now supports 1 cell AND 2 cells.
+// - Robust cell map: if data-x/data-y absent, parse from id="cell_x_y".
+// - Optional quick button: #btn_move_forward1 (forward 1).
+// - World-camera mapping preserved; grid does not rotate; hero fixed at (0,0).
+// - Minor: forward-2 highlight blocked if intermediate (0,1) occupied.
 
 const ASSETS = {
   hero: "/assets/combat/hero.png",
@@ -18,7 +21,7 @@ const key = (x,y)=>`${x},${y}`;
 
 // state
 const state = {
-  hero: { defense:false }, // hero fixed at screen (0,0)
+  hero: { defense:false },
   atk: 1, move: 1, simple: 1,
   turnsTotal: 0,
   draft: [],
@@ -27,7 +30,7 @@ const state = {
     { id:"e1", kind:"enemy", name:"Гоблин-лучник", x:-1, y:3, pips:3 },
     { id:"b1", kind:"boss",  name:"Кровавый череп", x: 1, y:3, pips:5 },
   ],
-  camera: { ox:0, oy:0, orientation:0 }, // deg clockwise: 0/90/180/270
+  camera: { ox:0, oy:0, orientation:0 }, // 0/90/180/270 (cw)
   options: { rangerPrecise:false },
 };
 
@@ -81,7 +84,11 @@ function open(){
     $svg = qs($wrap, "svg");
     $cells = qsa($wrap, '#cells rect[id^="cell_"]');
     $sprites = qs($wrap, "#sprites");
-    if(!$svg || !$cells.length || !$sprites){ console.error("SVG anchors missing"); $wrap.style.display="flex"; return; }
+    if(!$svg || !$cells.length || !$sprites){
+      console.error("SVG anchors missing: svg/cells/sprites"); 
+      $wrap.style.display="flex"; 
+      return; 
+    }
 
     buildCellMap();
     ensureHL();
@@ -134,12 +141,20 @@ function screenToWorld(sx,sy){
 }
 // -------------------------------------
 
+// Build map of screen cells from SVG
 function buildCellMap(){
   cellMap.clear();
   for(const r of $cells){
-    const x = +r.getAttribute("data-x");
-    const y = +r.getAttribute("data-y");
+    let x = +r.getAttribute("data-x");
+    let y = +r.getAttribute("data-y");
+    if(!Number.isFinite(x) || !Number.isFinite(y)){
+      // Fallback: parse from id="cell_{x}_{y}"
+      const m = (r.id||"").match(/^cell_(-?\d+)_(-?\d+)$/);
+      if(m){ x = parseInt(m[1],10); y = parseInt(m[2],10); }
+    }
     if(Number.isFinite(x) && Number.isFinite(y)){
+      r.setAttribute("data-x", x);
+      r.setAttribute("data-y", y);
       cellMap.set(key(x,y), {x,y,rect:r});
     }
   }
@@ -150,7 +165,9 @@ function ensureHL(){
   if(!$hl){
     $hl = svgNS("g");
     $hl.setAttribute("id","highlights");
-    $sprites.parentNode.insertBefore($hl, $sprites);
+    const boardGroup = qs($wrap, "#cam") || qs($wrap, "#board") || $svg;
+    const sprites = qs($wrap, "#sprites");
+    (sprites?.parentNode || boardGroup).insertBefore($hl, sprites || null);
   }
 }
 function clearHL(){
@@ -183,13 +200,22 @@ function enemyAtScreen(sx,sy){
 }
 
 function allowedWorldMoves(){
+  // Vectors defined in world coords before orientation
   return [
-    {x:0, y:-1},        // back
+    {x:0, y:-1},         // back
     {x:-1, y:-1}, {x:1, y:-1}, // back diag
     {x:-1, y:0}, {x:1, y:0},   // left / right
-    {x:0, y:2},         // forward 2
+    {x:0, y:1},          // forward 1  (NEW)
+    {x:0, y:2},          // forward 2
     {x:-1, y:1}, {x:1, y:1},   // forward diag
   ];
+}
+function pathClearForScreenVector(sx,sy){
+  // Only special-case forward-2: block if (0,1) is occupied
+  if(sx===0 && sy===2){
+    return !enemyAtScreen(0,1);
+  }
+  return true;
 }
 function updateHighlights(){
   clearHL();
@@ -199,6 +225,7 @@ function updateHighlights(){
     const sx = s.x; const sy = s.y;
     if(!cellMap.has(key(sx,sy))) continue;
     if(enemyAtScreen(sx,sy)) continue;
+    if(!pathClearForScreenVector(sx,sy)) continue;
     highlightCell(sx,sy);
   }
 }
@@ -270,7 +297,7 @@ function mountSprites(){
 
   for(const e of state.enemies){
     const s = worldToScreen(e.x, e.y);
-    if(!s || !cellMap.has(key(s.x,s.y))) continue; // out of board
+    if(!s || !cellMap.has(key(s.x,s.y))) continue; // out of board/FOV
     const g = svgNS("g"); g.setAttribute("id", `sprite_${e.id}`);
     const ei = placeImageAtCell(e.kind, cellMap.get(key(s.x,s.y)));
     if(ei) g.appendChild(ei);
@@ -291,9 +318,9 @@ function resetCounters(){
 function setDraftHint(text){ const t=qs($wrap,"#input_text"); if(t) t.textContent=text; }
 function pushDraft(txt){ state.draft.push(txt); setDraftHint(state.draft.join(". ")+"."); }
 function updateCounters(){
-  qs($wrap,"#counter_atk text").textContent   = `АТК ${state.atk}/1`;
-  qs($wrap,"#counter_move text").textContent  = `ДВИЖ ${state.move}/1`;
-  qs($wrap,"#counter_simple text").textContent= `ПРОСТ ${state.simple}/1`;
+  qs($wrap,"#counter_atk text")?.textContent    = `АТК ${state.atk}/1`;
+  qs($wrap,"#counter_move text")?.textContent   = `ДВИЖ ${state.move}/1`;
+  qs($wrap,"#counter_simple text")?.textContent = `ПРОСТ ${state.simple}/1`;
 }
 function updateDefenseBadge(){ const b=qs($wrap,"#badge_defense"); if(b) b.style.display = state.hero.defense? "block":"none"; }
 
@@ -308,12 +335,12 @@ function setupButtons(){
     });
   });
 
-  // Quick move buttons (optional in SVG)
+  // Quick move buttons (optional)
   qs($wrap,"#btn_move_left")?.addEventListener("click", ()=> moveByScreenTarget(-1,0));
   qs($wrap,"#btn_move_right")?.addEventListener("click", ()=> moveByScreenTarget(1,0));
   qs($wrap,"#btn_move_back")?.addEventListener("click", ()=> moveByScreenTarget(0,-1));
   qs($wrap,"#btn_move_forward")?.addEventListener("click", ()=> moveByScreenTarget(0,2));
-  // Diagonals via click on highlights
+  qs($wrap,"#btn_move_forward1")?.addEventListener("click", ()=> moveByScreenTarget(0,1)); // NEW
 
   // Rotation — change orientation (field of view)
   qs($wrap,"#btn_turn_left")?.addEventListener("click", ()=>{ state.camera.orientation = (state.camera.orientation+270)%360; mountSprites(); updateHighlights(); });
