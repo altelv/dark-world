@@ -1,6 +1,6 @@
 (function () {
   const BOOT_NS = "DWCombatOverlay";
-  if (window[BOOT_NS]) return; // singleton
+  if (window[BOOT_NS]) return;
 
   const state = {
     root: null,
@@ -14,6 +14,39 @@
 
   function log(...args) { console.log("[CombatOverlay]", ...args); }
   function dispatch(name, detail) { window.dispatchEvent(new CustomEvent(name, { detail })); }
+
+  function injectBaseCSS() {
+    // Force overlay above everything; hide legacy HTML overlay if present
+    const css = `
+      /* Top-most combat layer */
+      #dw-combat-root {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483647 !important; /* max int */
+        pointer-events: none; /* enable selectively in svg */
+      }
+      #dw-combat-root svg {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+      /* Enable interactions only for intended parts */
+      #dw-combat-svg [id^="btn_"],
+      #dw-combat-svg .clickable {
+        pointer-events: all !important;
+        cursor: pointer;
+      }
+      #dw-combat-svg .hl-move { outline: 2px solid rgba(255,255,255,0.85); outline-offset: -2px; }
+      #dw-combat-svg .hl-target { outline: 2px solid rgba(255,0,0,0.85); outline-offset: -2px; }
+
+      /* Hide legacy HTML overlay if present */
+      #combatOverlay { display: none !important; visibility: hidden !important; }
+    `;
+    const style = document.createElement("style");
+    style.id = "dw-combat-style";
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
 
   async function loadSVGInline(url) {
     const resp = await fetch(url, { cache: "no-store" });
@@ -93,17 +126,6 @@
     highlightMoves();
   }
 
-  function ensurePointerCSS() {
-    const css = `
-      #dw-combat-svg [id^="btn_"] { cursor: pointer; pointer-events: all; }
-      #dw-combat-svg .hl-move { outline: 2px solid rgba(255,255,255,0.8); outline-offset: -2px; }
-      #dw-combat-svg .hl-target { outline: 2px solid rgba(255,0,0,0.8); outline-offset: -2px; }
-    `;
-    const style = document.createElement("style");
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-
   function mapBtnToKind(id) {
     const low = id.toLowerCase();
     if (low.includes("turn_right")) return "__turn_right";
@@ -139,13 +161,12 @@
 
   async function init() {
     try {
-      // idempotent
       if (state.root) return;
+
+      injectBaseCSS();
 
       const root = document.createElement("div");
       root.id = "dw-combat-root";
-      root.style.position = "relative";
-      root.style.zIndex = "10";
       document.body.appendChild(root);
       state.root = root;
 
@@ -157,7 +178,6 @@
       state.center = computeBoardCenter(state.svg);
 
       ensureMigrate();
-      ensurePointerCSS();
       bindButtons();
       highlightMoves();
 
@@ -167,17 +187,16 @@
         highlightMoves,
         getFacing: () => state.facing,
         setHeroPos: (x, y) => { state.hero.x = x|0; state.hero.y = y|0; highlightMoves(); },
-        setFacing: (f) => { state.facing = (f|0)%4; const prev = state.facing; rotateCamera(0); },
+        setFacing: (f) => { state.facing = (f|0)%4; const ang = state.facing * 90; state.cam.setAttribute("transform", `rotate(${ang} ${state.center.x} ${state.center.y})`); highlightMoves(); },
       };
 
-      log("Overlay ready");
+      log("Overlay ready (top-layer)");
       dispatch("dw:combat:overlayReady", {});
     } catch (err) {
       console.error("Combat overlay init failed:", err);
     }
   }
 
-  // Run now if DOM is already ready; otherwise wait
   if (document.readyState === "complete" || document.readyState === "interactive") {
     init();
   } else {

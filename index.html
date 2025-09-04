@@ -10,6 +10,7 @@
   <title>Темный Мир — каркас + БойБлок v1</title>
   <link rel="stylesheet" href="./styles.css?v=6">
   <!-- legacy: <link rel="stylesheet" href="blocks/combat/combat.css?v=6"> -->
+<style id="dw-combat-inline">#combatOverlay{display:none!important}</style>
 </head>
 <body>
   <div id="app">
@@ -165,8 +166,10 @@
   <!-- External scripts -->
  
   <!-- legacy: <script src="blocks/combat/combat.js?v=6"></script> -->
+  <script type="module" src="/js/combat-overlay.js"></script>
+  
 
-  <!-- Combat (SVG) runtime -->
+  <!-- Combat (SVG) runtime, layered on top -->
   <script src="js/svg-migrate.js"></script>
   <script src="js/combat-overlay.js"></script>
   <script src="js/combat-logic.js"></script>
