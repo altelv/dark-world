@@ -1,0 +1,18 @@
+.combat{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:80}
+.combat.hidden{display:none}.combat__wrap{width:min(1200px,96vw);height:min(760px,94vh);background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.combat__header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border)}
+.combat__title{font-weight:800;letter-spacing:.3px}.combat__counters{display:flex;gap:10px;align-items:center}
+.counter{font-weight:700;background:rgba(122,87,198,.15);border:1px solid rgba(122,87,198,.35);padding:4px 8px;border-radius:999px;font-size:12px}
+.combat__tools{display:flex;gap:6px}.icon{background:var(--muted);border:1px solid var(--border);border-radius:10px;padding:6px 10px;color:var(--text);cursor:pointer}
+.combat__board{flex:1;display:grid;grid-template-columns:1fr 260px;gap:12px;padding:12px}
+.board{background:var(--muted);border:1px solid var(--border);border-radius:12px;position:relative;overflow:hidden;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);gap:2px;padding:6px}
+.cell{background:rgba(0,0,0,.15);border:1px solid var(--border);border-radius:6px;position:relative;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-dim)}
+.cell.hero{outline:2px solid var(--accent)}.cell.enemy{background:rgba(200,80,80,.2)}.cell.obstacle{background:rgba(120,130,150,.2)}
+.cell.cover-highlight::after{content:"";position:absolute;inset:0;background:rgba(235,226,52,.18);border:1px solid rgba(235,226,52,.35);border-radius:6px}
+.label{position:absolute;bottom:4px;left:4px;font-size:10px;color:#fff;background:rgba(0,0,0,.35);padding:2px 4px;border-radius:4px}
+.side{display:flex;flex-direction:column;gap:12px}.side__section{background:var(--muted);border:1px solid var(--border);border-radius:12px;padding:10px}
+.actions,.moves{display:flex;flex-wrap:wrap;gap:8px}.btn-end{margin-left:auto;margin-right:auto;display:block;font-size:18px;padding:14px 28px;border-radius:999px}
+.combat__footer{display:flex;gap:12px;align-items:center;padding:12px;border-top:1px solid var(--border)}.input input{width:38vw}
+.badge{display:inline-flex;gap:6px;align-items:center;padding:6px 8px;border-radius:999px;font-size:12px;background:rgba(122,87,198,.16);border:1px solid rgba(122,87,198,.35)}
+.cell.target{outline:2px dashed rgba(255,255,255,.45)}.cell.blocked{filter:grayscale(1);opacity:.6}.cell.range{box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.btn-dev{width:100%}

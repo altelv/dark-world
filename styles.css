@@ -1,58 +1,23 @@
-
-:root{
-  --bg:#0d0f13; --panel:#171920; --muted:#1f222a; --bluegray:#324153;
-  --accent:#7a57c6; --danger:#8f2b2e; --text:#ffffff; --text-dim:#c9cbd6;
-  --border:rgba(255,255,255,0.06); --shadow:0 8px 30px rgba(0,0,0,0.45);
-}
-*{box-sizing:border-box} html,body{height:100%}
-html,body,#app{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
-  font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
-
-/* DESKTOP: три колонки слева→направо (равные) */
+/* base styles (same as earlier build) */ 
+:root{--bg:#0d0f13;--panel:#171920;--muted:#1f222a;--bluegray:#324153;--accent:#7a57c6;--danger:#8f2b2e;--text:#fff;--text-dim:#c9cbd6;--border:rgba(255,255,255,.06);--shadow:0 8px 30px rgba(0,0,0,.45)}
+*{box-sizing:border-box}html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
 .app{height:100vh;width:100vw;padding:12px}
-.carousel{
-  height:100%; width:100%;
-  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
-}
-.panel{min-width:0; height:100%}
-.col{
-  height:100%;
-  display:flex; flex-direction:column; min-width:0;
-  background:var(--panel); border:1px solid var(--border); border-radius:14px;
-  box-shadow:var(--shadow); overflow:hidden;
-}
-.col h2{margin:0;padding:16px 16px 10px;font-size:18px;font-weight:700;letter-spacing:.2px;
-  border-bottom:1px solid var(--border)}
-.col--scroll{overflow-y:auto}
-.col-content{padding:16px;display:flex;flex-direction:column;gap:12px}
+.carousel{height:100%;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.panel{min-width:0;height:100%}
+.col{height:100%;display:flex;flex-direction:column;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.col h2{margin:0;padding:16px 16px 10px;font-size:18px;font-weight:700;border-bottom:1px solid var(--border)}
+.col--scroll{overflow-y:auto}.col-content{padding:16px;display:flex;flex-direction:column;gap:12px}
 .card{background:var(--muted);border:1px solid var(--border);border-radius:12px;padding:12px}
-
-/* Chat demo */
 .chat-msg{padding:12px 14px;border-radius:12px;max-width:92%;background:var(--muted);border:1px solid var(--border)}
 .chat-msg.dm{align-self:flex-start}.chat-msg.player{align-self:flex-end;background:transparent;border-color:var(--accent)}
-.input-wrap{margin-top:auto;position:sticky;bottom:0;left:0;right:0;background:linear-gradient(180deg, rgba(13,15,19,0), rgba(13,15,19,.75) 35%, var(--panel) 70%);
-  padding:12px 12px 14px;border-top:1px solid var(--border)}
-.input{display:flex;align-items:center;gap:10px;background:var(--muted);border:1px solid var(--border);border-radius:999px;padding:10px 12px}
+.input-wrap{margin-top:auto;position:sticky;bottom:0;background:linear-gradient(180deg, rgba(13,15,19,0), rgba(13,15,19,.75) 35%, var(--panel) 70%);padding:12px 12px 14px;border-top:1px solid var(--border)}
+.input{display:flex;gap:10px;background:var(--muted);border:1px solid var(--border);border-radius:999px;padding:10px 12px}
 .input input{flex:1;background:transparent;border:none;color:var(--text);outline:none;font-size:15px}
 .btn{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:10px 14px;font-weight:700;cursor:pointer}
 .btn:disabled{opacity:.6;cursor:default}
 .badge{display:inline-flex;gap:6px;align-items:center;padding:6px 8px;border-radius:999px;font-size:12px;background:rgba(122,87,198,.16);border:1px solid rgba(122,87,198,.35)}
 .hr{height:1px;background:var(--border);margin:4px 0 8px}.small{font-size:12px;color:var(--text-dim)}
-.link{color:var(--text);opacity:.85;text-decoration:underline dotted;text-underline-offset:3px}
 .palette{display:flex;gap:10px;flex-wrap:wrap}.swatch{width:44px;height:44px;border-radius:10px;border:1px solid var(--border)}
-.swatch.bg{background:var(--bg)}.swatch.panel{background:var(--panel)}.swatch.muted{background:var(--muted)}
-.swatch.bluegray{background:var(--bluegray)}.swatch.accent{background:var(--accent)}.swatch.danger{background:var(--danger)}.swatch.white{background:#fff;border-color:rgba(0,0,0,.08)}
-
-/* MOBILE: карусель с прокруткой по горизонтали */
-@media (max-width: 900px){
-  .app{padding:0}
-  .carousel{
-    display:flex; height:100vh; overflow-x:auto; overscroll-behavior-x:contain;
-    scroll-snap-type:x mandatory; gap:0;
-  }
-  .panel{min-width:100vw;height:100vh;scroll-snap-align:center;padding:12px}
-  .col{height:100%}
-  .col h2{position:sticky;top:0;background:var(--panel);z-index:5}
-  .nav-dots{position:fixed;top:12px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:10}
-  .dot{width:8px;height:8px;border-radius:999px;background:#5b6070}.dot.active{background:var(--accent)}
-}
+.swatch.bg{background:#0d0f13}.swatch.panel{background:#171920}.swatch.muted{background:#1f222a}.swatch.bluegray{background:#324153}.swatch.accent{background:#7a57c6}.swatch.danger{background:#8f2b2e}.swatch.white{background:#fff;border-color:rgba(0,0,0,.08)}
+@media (max-width: 900px){.app{padding:0}.carousel{display:flex;height:100vh;overflow-x:auto;scroll-snap-type:x mandatory}.panel{min-width:100vw;height:100vh;scroll-snap-align:center;padding:12px}.col h2{position:sticky;top:0;background:var(--panel);z-index:5}} 
+/* ==== Combat overlay classes come from blocks/combat/combat.css ==== */
