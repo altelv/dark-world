@@ -1,10 +1,8 @@
-// js/combat-overlay.js — v1.3
-// Changes:
-// - Forward movement now supports 1 cell AND 2 cells.
-// - Robust cell map: if data-x/data-y absent, parse from id="cell_x_y".
-// - Optional quick button: #btn_move_forward1 (forward 1).
-// - World-camera mapping preserved; grid does not rotate; hero fixed at (0,0).
-// - Minor: forward-2 highlight blocked if intermediate (0,1) occupied.
+// js/combat-overlay.js — v1.3.1 (hotfix)
+// - Fix: removed optional-chaining on assignment (invalid left-hand side in some browsers/builds).
+// - Forward movement supports 1 and 2 cells.
+// - Robust cell parsing from id="cell_x_y" if no data-x/y.
+// - World-camera mapping; hero fixed at (0,0).
 
 const ASSETS = {
   hero: "/assets/combat/hero.png",
@@ -97,7 +95,8 @@ function open(){
     resetCounters();
     updateHighlights();
 
-    qs($wrap, "#btn_ranger_precise")?.classList.add("hidden");
+    const btnRP = qs($wrap, "#btn_ranger_precise");
+    if(btnRP) btnRP.classList.add("hidden");
 
     $wrap.style.display="flex";
     $wrap.style.justifyContent="center";
@@ -167,7 +166,7 @@ function ensureHL(){
     $hl.setAttribute("id","highlights");
     const boardGroup = qs($wrap, "#cam") || qs($wrap, "#board") || $svg;
     const sprites = qs($wrap, "#sprites");
-    (sprites?.parentNode || boardGroup).insertBefore($hl, sprites || null);
+    (sprites && sprites.parentNode ? sprites.parentNode : boardGroup).insertBefore($hl, sprites || null);
   }
 }
 function clearHL(){
@@ -205,7 +204,7 @@ function allowedWorldMoves(){
     {x:0, y:-1},         // back
     {x:-1, y:-1}, {x:1, y:-1}, // back diag
     {x:-1, y:0}, {x:1, y:0},   // left / right
-    {x:0, y:1},          // forward 1  (NEW)
+    {x:0, y:1},          // forward 1
     {x:0, y:2},          // forward 2
     {x:-1, y:1}, {x:1, y:1},   // forward diag
   ];
@@ -318,9 +317,12 @@ function resetCounters(){
 function setDraftHint(text){ const t=qs($wrap,"#input_text"); if(t) t.textContent=text; }
 function pushDraft(txt){ state.draft.push(txt); setDraftHint(state.draft.join(". ")+"."); }
 function updateCounters(){
-  qs($wrap,"#counter_atk text")?.textContent    = `АТК ${state.atk}/1`;
-  qs($wrap,"#counter_move text")?.textContent   = `ДВИЖ ${state.move}/1`;
-  qs($wrap,"#counter_simple text")?.textContent = `ПРОСТ ${state.simple}/1`;
+  const ca = qs($wrap,"#counter_atk text");
+  const cm = qs($wrap,"#counter_move text");
+  const cs = qs($wrap,"#counter_simple text");
+  if(ca) ca.textContent = `АТК ${state.atk}/1`;
+  if(cm) cm.textContent = `ДВИЖ ${state.move}/1`;
+  if(cs) cs.textContent = `ПРОСТ ${state.simple}/1`;
 }
 function updateDefenseBadge(){ const b=qs($wrap,"#badge_defense"); if(b) b.style.display = state.hero.defense? "block":"none"; }
 
@@ -336,34 +338,49 @@ function setupButtons(){
   });
 
   // Quick move buttons (optional)
-  qs($wrap,"#btn_move_left")?.addEventListener("click", ()=> moveByScreenTarget(-1,0));
-  qs($wrap,"#btn_move_right")?.addEventListener("click", ()=> moveByScreenTarget(1,0));
-  qs($wrap,"#btn_move_back")?.addEventListener("click", ()=> moveByScreenTarget(0,-1));
-  qs($wrap,"#btn_move_forward")?.addEventListener("click", ()=> moveByScreenTarget(0,2));
-  qs($wrap,"#btn_move_forward1")?.addEventListener("click", ()=> moveByScreenTarget(0,1)); // NEW
+  const ml = qs($wrap,"#btn_move_left");
+  const mr = qs($wrap,"#btn_move_right");
+  const mb = qs($wrap,"#btn_move_back");
+  const mf = qs($wrap,"#btn_move_forward");
+  const mf1= qs($wrap,"#btn_move_forward1");
+  if(ml) ml.addEventListener("click", ()=> moveByScreenTarget(-1,0));
+  if(mr) mr.addEventListener("click", ()=> moveByScreenTarget(1,0));
+  if(mb) mb.addEventListener("click", ()=> moveByScreenTarget(0,-1));
+  if(mf) mf.addEventListener("click", ()=> moveByScreenTarget(0,2));
+  if(mf1)mf1.addEventListener("click", ()=> moveByScreenTarget(0,1));
 
   // Rotation — change orientation (field of view)
-  qs($wrap,"#btn_turn_left")?.addEventListener("click", ()=>{ state.camera.orientation = (state.camera.orientation+270)%360; mountSprites(); updateHighlights(); });
-  qs($wrap,"#btn_turn_right")?.addEventListener("click", ()=>{ state.camera.orientation = (state.camera.orientation+90)%360;  mountSprites(); updateHighlights(); });
+  const tl = qs($wrap,"#btn_turn_left");
+  const tr = qs($wrap,"#btn_turn_right");
+  if(tl) tl.addEventListener("click", ()=>{ state.camera.orientation = (state.camera.orientation+270)%360; mountSprites(); updateHighlights(); });
+  if(tr) tr.addEventListener("click", ()=>{ state.camera.orientation = (state.camera.orientation+90)%360;  mountSprites(); updateHighlights(); });
 
   // Combat actions
-  qs($wrap,"#btn_ATTAK")?.addEventListener("click", ()=>{
+  const ba = qs($wrap,"#btn_ATTAK");
+  const bd = qs($wrap,"#btn_defense");
+  const bt = qs($wrap,"#btn_throw");
+  const bp = qs($wrap,"#btn_potion");
+  const bb = qs($wrap,"#btn_bandage");
+  const be = qs($wrap,"#btn_end_turn");
+  const br = qs($wrap,"#btn_rollback");
+
+  if(ba) ba.addEventListener("click", ()=>{
     if(state.atk<=0) return; state.atk-=1; pushDraft("Атаковал ближайшую цель"); updateCounters();
   });
-  qs($wrap,"#btn_defense")?.addEventListener("click", ()=>{
+  if(bd) bd.addEventListener("click", ()=>{
     if(state.atk<=0) return; state.atk-=1; state.hero.defense=true; pushDraft("Встал в оборону"); updateDefenseBadge(); updateCounters();
   });
-  qs($wrap,"#btn_throw")?.addEventListener("click", ()=>{
+  if(bt) bt.addEventListener("click", ()=>{
     if(state.simple<=0) return; state.simple-=1; pushDraft("Метнул метательное в ближайшего врага"); updateCounters();
   });
-  qs($wrap,"#btn_potion")?.addEventListener("click", ()=>{
+  if(bp) bp.addEventListener("click", ()=>{
     if(state.simple<=0) return; state.simple-=1; pushDraft("Выпил зелье"); updateCounters();
   });
-  qs($wrap,"#btn_bandage")?.addEventListener("click", ()=>{
+  if(bb) bb.addEventListener("click", ()=>{
     if(state.simple<=0) return; state.simple-=1; pushDraft("Сделал перевязку"); updateCounters();
   });
 
-  qs($wrap,"#btn_end_turn")?.addEventListener("click", ()=>{
+  if(be) be.addEventListener("click", ()=>{
     state.turnsTotal += 1;
     dispatch("combat:end", {
       turn_summary: state.draft.join(". "),
@@ -374,7 +391,7 @@ function setupButtons(){
     resetCounters();
   });
 
-  qs($wrap,"#btn_rollback")?.addEventListener("click", ()=>{
+  if(br) br.addEventListener("click", ()=>{
     if(!state.snapshot) return;
     Object.assign(state, JSON.parse(JSON.stringify(state.snapshot)));
     mountSprites(); updateCounters(); updateDefenseBadge(); setDraftHint(state.draft.join(". ")); updateHighlights();
