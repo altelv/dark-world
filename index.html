@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Темный Мир — каркас + БойБлок v1</title>
-  <link rel="stylesheet" href="./styles.css?v=4">
-  <link rel="stylesheet" href="blocks/combat/combat.css?v=4">
+  <link rel="stylesheet" href="./styles.css?v=5">
+  <link rel="stylesheet" href="blocks/combat/combat.css?v=5">
 </head>
 <body>
   <div id="app">
@@ -19,7 +19,7 @@
               <div class="card"><div class="small">Имя</div><div style="font-weight:700;font-size:18px;">Герой</div><div class="hr"></div><div class="small">Раса / Класс / Перки</div><div>Человек / — / —</div></div>
               <div class="card"><div class="small">Полоски</div><div>HP: 14 • Удача: 3 • Усталость: 0</div></div>
               <div class="card"><div class="small">Навыки (пример)</div><div>Атлетика 4 • Поиск 3 • Магия 0</div></div>
-              <div class="card"><button class="btn btn-dev" id="btnDevBattle">DEV: _проверка_боя</button></div>
+              <div class="card"><button class="btn btn-dev" id="btnDevBattle">DEV: открыть бой</button></div>
             </div>
           </div>
         </section>
@@ -53,6 +53,9 @@
     </div>
   </div>
 
+  <!-- Debug floating opener -->
+  <button id="debugOpenCombat" title="Открыть бой" style="position:fixed;right:14px;bottom:14px;z-index:90;border-radius:999px;padding:10px 14px;border:none;background:#7a57c6;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.35)">Бой</button>
+
   <!-- Combat Overlay -->
   <div id="combatOverlay" class="combat hidden" aria-hidden="true">
     <div class="combat__wrap combat--vertical">
@@ -75,9 +78,9 @@
       <div class="combat__board">
         <div class="board-wrap">
           <div class="board" id="board">
+            <div class="grid" id="grid"></div>
             <div class="sprites" id="sprites">
               <div class="sprite hero" id="heroSprite"><span>Г</span></div>
-              <!-- enemy sprites go here -->
             </div>
           </div>
         </div>
@@ -122,7 +125,37 @@
     </div>
   </div>
 
-  <script src="./script.js?v=4" defer></script>
-  <script src="blocks/combat/combat.js?v=4" defer></script>
+  <!-- Boot script: guarantees opening even if combat.js fails -->
+  <script>
+  (function boot(){
+    function onReady(fn){ if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+    onReady(function(){
+      var send = document.getElementById('sendBtn');
+      var input = document.getElementById('chatInput');
+      function openFallback(){
+        var ov = document.getElementById('combatOverlay');
+        if(!ov) return;
+        ov.classList.remove('hidden');
+        ov.setAttribute('aria-hidden','false');
+      }
+      function tryOpenCombat(){
+        if (window.CombatOverlay && typeof window.CombatOverlay.open==='function'){ window.CombatOverlay.open(); }
+        else { openFallback(); }
+      }
+      if (send) send.addEventListener('click', function(){
+        var v = (input && input.value || '').trim();
+        if (v.indexOf('_проверка_боя')>-1) tryOpenCombat();
+      });
+      var dev = document.getElementById('btnDevBattle');
+      if (dev) dev.addEventListener('click', tryOpenCombat);
+      var dbg = document.getElementById('debugOpenCombat');
+      if (dbg) dbg.addEventListener('click', tryOpenCombat);
+    });
+  })();
+  </script>
+
+  <!-- External scripts (main logic). Even if these fail, boot-fallback above will still open overlay -->
+  <script src="./script.js?v=5"></script>
+  <script src="blocks/combat/combat.js?v=5"></script>
 </body>
 </html>
