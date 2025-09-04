@@ -1,73 +1,119 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Темный Мир — каркас + БойБлок v1</title>
-<link rel="stylesheet" href="./styles.css?v=2">
-<link rel="stylesheet" href="blocks/combat/combat.css?v=1"></head>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Темный Мир — каркас + БойБлок v1</title>
+  <link rel="stylesheet" href="./styles.css?v=2">
+  <link rel="stylesheet" href="blocks/combat/combat.css?v=1">
+</head>
 <body>
-<div id="app"><div class="app"><div class="carousel" id="carousel">
-<section class="panel"><div class="col" id="left"><h2>Персонаж</h2>
-<div class="col-content"><div class="badge">v1 Каркас • только UI</div>
-<div class="card"><div class="small">Имя</div><div style="font-weight:700;font-size:18px;">Герой</div><div class="hr"></div><div class="small">Раса / Класс / Перки</div><div>Человек / — / —</div></div>
-<div class="card"><div class="small">Полоски</div><div>HP: 14 • Удача: 3 • Усталость: 0</div></div>
-<div class="card"><div class="small">Навыки (пример)</div><div>Атлетика 4 • Поиск 3 • Магия 0</div></div>
-<div class="card"><button class="btn btn-dev" id="btnDevBattle">DEV: _проверка_боя</button></div></div></div></section>
-<section class="panel"><div class="col col--scroll" id="center"><h2>Главная</h2>
-<div class="col-content" id="chat"><div class="chat-msg dm">Добро пожаловать в Темный Мир, одинокая душа.</div>
-<div class="chat-msg dm">Десктоп: три колонки рядом. Мобайл: свайповая карусель.</div>
-<div class="chat-msg player">Ок. Бой и d20 появятся как оверлей поверх этой колонки.</div>
-<div class="input-wrap"><div class="input"><input id="chatInput" placeholder="Напишите _проверка_боя чтобы открыть боевой оверлей…"/>
-<button class="btn" id="sendBtn">📜 Отправить</button></div></div></div></div></section>
-<section class="panel"><div class="col" id="right"><h2>Инвентарь</h2>
-<div class="col-content"><div class="card"><div class="small">Слоты (пример)</div><ul style="margin:6px 0 0 18px;"><li>Броня — отсутствует</li><li>Левая рука — пусто</li><li>Правая рука — пусто</li><li>Пояс — пусто</li></ul></div>
-<div class="card"><div class="small">Цвета</div><div class="palette"><div class="swatch bg"></div><div class="swatch panel"></div><div class="swatch muted"></div><div class="swatch bluegray"></div><div class="swatch accent"></div><div class="swatch danger"></div><div class="swatch white"></div></div></div></div></div></section>
-</div><div class="nav-dots" id="dots" aria-hidden="true"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>
-<div id="combatOverlay" class="combat hidden" aria-hidden="true">
-  <div class="combat__wrap">
-    <header class="combat__header">
-      <div class="combat__title">Бой</div>
-      <div class="combat__counters">
-        <div class="counter" data-kind="atk" title="Основные действия">АТК <span id="cntAtk">1</span>/<span>1</span></div>
-        <div class="counter" data-kind="move" title="Перемещения">ДВИЖ <span id="cntMove">1</span>/<span>1</span></div>
-        <div class="counter" data-kind="simple" title="Простые действия">ПРОСТ <span id="cntSimple">1</span>/<span>1</span></div>
-        <div class="badge" id="badgeDefense" hidden>Оборона</div>
+  <div id="app">
+    <div class="app">
+      <div class="carousel" id="carousel">
+        <section class="panel">
+          <div class="col" id="left">
+            <h2>Персонаж</h2>
+            <div class="col-content">
+              <div class="badge">v1 Каркас • только UI</div>
+              <div class="card"><div class="small">Имя</div><div style="font-weight:700;font-size:18px;">Герой</div><div class="hr"></div><div class="small">Раса / Класс / Перки</div><div>Человек / — / —</div></div>
+              <div class="card"><div class="small">Полоски</div><div>HP: 14 • Удача: 3 • Усталость: 0</div></div>
+              <div class="card"><div class="small">Навыки (пример)</div><div>Атлетика 4 • Поиск 3 • Магия 0</div></div>
+              <div class="card"><button class="btn btn-dev" id="btnDevBattle">DEV: _проверка_боя</button></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="col col--scroll" id="center">
+            <h2>Главная</h2>
+            <div class="col-content" id="chat">
+              <div class="chat-msg dm">Добро пожаловать в Темный Мир, одинокая душа.</div>
+              <div class="chat-msg dm">Десктоп: три колонки рядом. Мобайл: свайповая карусель.</div>
+              <div class="chat-msg player">Ок. Бой и d20 появятся как оверлей поверх этой колонки.</div>
+              <div class="input-wrap">
+                <div class="input">
+                  <input id="chatInput" placeholder="Напишите _проверка_боя и нажмите Shift+Enter или «Отправить»…"/>
+                  <button class="btn" id="sendBtn">📜 Отправить</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="col" id="right">
+            <h2>Инвентарь</h2>
+            <div class="col-content">
+              <div class="card"><div class="small">Слоты (пример)</div><ul style="margin:6px 0 0 18px;"><li>Броня — отсутствует</li><li>Левая рука — пусто</li><li>Правая рука — пусто</li><li>Пояс — пусто</li></ul></div>
+              <div class="card"><div class="small">Цвета</div><div class="palette"><div class="swatch bg"></div><div class="swatch panel"></div><div class="swatch muted"></div><div class="swatch bluegray"></div><div class="swatch accent"></div><div class="swatch danger"></div><div class="swatch white"></div></div></div>
+            </div>
+          </div>
+        </section>
       </div>
-      <div class="combat__tools">
-        <button class="icon" id="btnTurnLeft" title="Повернуть налево">⟲</button>
-        <button class="icon" id="btnTurnRight" title="Повернуть направо">⟳</button>
-        <button class="icon" id="btnCloseCombat" title="Закрыть бой">✕</button>
-      </div>
-    </header>
-    <div class="combat__board">
-      <div class="board" id="board"></div>
-      <aside class="side">
-        <div class="side__section"><div class="small">Основные</div><div class="actions">
-          <button class="btn action" id="actMelee">Ближняя</button>
-          <button class="btn action" id="actShoot">Выстрел</button>
-          <button class="btn action" id="actMagic">Магия</button>
-          <button class="btn action" id="actDefense">Оборона</button>
-          <button class="btn action" id="actRangerPrecise" title="Рейнджер: АТК+ПРОСТ, игнор физ. брони">Меткий выстрел</button>
-        </div></div>
-        <div class="side__section"><div class="small">Простые</div><div class="actions">
-          <button class="btn action" id="actThrow">Метнуть</button>
-          <button class="btn action" id="actPotion">Зелье</button>
-          <button class="btn action" id="actBandage">Перевязка</button>
-        </div></div>
-        <div class="side__section"><div class="small">Движение</div><div class="moves">
-          <button class="btn move" data-mv="back">Назад</button>
-          <button class="btn move" data-mv="back_diag">Назад (диаг)</button>
-          <button class="btn move" data-mv="fwd">Вперёд</button>
-          <button class="btn move" data-mv="fwd_diag">Вперёд (диаг)</button>
-          <button class="btn move" data-mv="left">Влево</button>
-          <button class="btn move" data-mv="right">Вправо</button>
-        </div></div>
-      </aside>
-    </div>
-    <div class="combat__footer">
-      <div class="input"><input id="combatInput" placeholder="Опишите ход... (черновик заполняется автоматически)"/></div>
-      <button class="btn btn-end" id="btnEndTurn">КОНЕЦ ХОДА</button>
+      <div class="nav-dots" id="dots" aria-hidden="true"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
     </div>
   </div>
-</div>
-<script src="./script.js"></script>
-<script defer src="blocks/combat/combat.js?v=1"></script>
-</body></html>
+
+  <!-- Combat Overlay -->
+  <div id="combatOverlay" class="combat hidden" aria-hidden="true">
+    <div class="combat__wrap">
+      <header class="combat__header">
+        <div class="combat__title">Бой</div>
+        <div class="combat__counters">
+          <div class="counter" data-kind="atk" title="Основные действия">АТК <span id="cntAtk">1</span>/<span>1</span></div>
+          <div class="counter" data-kind="move" title="Перемещения">ДВИЖ <span id="cntMove">1</span>/<span>1</span></div>
+          <div class="counter" data-kind="simple" title="Простые действия">ПРОСТ <span id="cntSimple">1</span>/<span>1</span></div>
+          <div class="badge" id="badgeDefense" hidden>Оборона</div>
+        </div>
+        <div class="combat__tools">
+          <button class="icon" id="btnTurnLeft" title="Повернуть налево">⟲</button>
+          <button class="icon" id="btnTurnRight" title="Повернуть направо">⟳</button>
+          <button class="icon" id="btnCloseCombat" title="Закрыть бой">✕</button>
+        </div>
+      </header>
+
+      <div class="combat__board">
+        <div class="board" id="board"></div>
+        <aside class="side">
+          <div class="side__section">
+            <div class="small">Основные</div>
+            <div class="actions">
+              <button class="btn action" id="actMelee">Ближняя</button>
+              <button class="btn action" id="actShoot">Выстрел</button>
+              <button class="btn action" id="actMagic">Магия</button>
+              <button class="btn action" id="actDefense">Оборона</button>
+              <button class="btn action" id="actRangerPrecise" title="Рейнджер: АТК+ПРОСТ, игнор физ. брони">Меткий выстрел</button>
+            </div>
+          </div>
+          <div class="side__section">
+            <div class="small">Простые</div>
+            <div class="actions">
+              <button class="btn action" id="actThrow">Метнуть</button>
+              <button class="btn action" id="actPotion">Зелье</button>
+              <button class="btn action" id="actBandage">Перевязка</button>
+            </div>
+          </div>
+          <div class="side__section">
+            <div class="small">Движение</div>
+            <div class="moves">
+              <button class="btn move" data-mv="back">Назад</button>
+              <button class="btn move" data-mv="back_diag">Назад (диаг)</button>
+              <button class="btn move" data-mv="fwd">Вперёд</button>
+              <button class="btn move" data-mv="fwd_diag">Вперёд (диаг)</button>
+              <button class="btn move" data-mv="left">Влево</button>
+              <button class="btn move" data-mv="right">Вправо</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="combat__footer">
+        <div class="input"><input id="combatInput" placeholder="Опишите ход... (черновик заполняется автоматически)"/></div>
+        <button class="btn btn-end" id="btnEndTurn">КОНЕЦ ХОДА</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js?v=2" defer></script>
+  <script src="blocks/combat/combat.js?v=2" defer></script>
+</body>
+</html>
