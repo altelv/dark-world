@@ -9,7 +9,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Темный Мир — каркас + БойБлок v1</title>
   <link rel="stylesheet" href="./styles.css?v=6">
-  <link rel="stylesheet" href="blocks/combat/combat.css?v=6">
+  <!-- legacy: <link rel="stylesheet" href="blocks/combat/combat.css?v=6"> -->
 </head>
 <body>
   <div id="app">
@@ -23,7 +23,7 @@
               <div class="card"><div class="small">Имя</div><div style="font-weight:700;font-size:18px;">Герой</div><div class="hr"></div><div class="small">Раса / Класс / Перки</div><div>Человек / — / —</div></div>
               <div class="card"><div class="small">Полоски</div><div>HP: 14 • Удача: 3 • Усталость: 0</div></div>
               <div class="card"><div class="small">Навыки (пример)</div><div>Атлетика 4 • Поиск 3 • Магия 0</div></div>
-              <div class="card"><button class="btn btn-dev" id="btnDevBattle" onclick="window.__openCombat()">DEV: открыть бой</button></div>
+              <div class="card"><button class="btn btn-dev" id="btnDevBattle" data-legacy="1" title="Legacy overlay disabled">DEV: открыть бой</button></div>
             </div>
           </div>
         </section>
@@ -58,7 +58,7 @@
   </div>
 
   <!-- Debug floating opener (inline fallback onclick) -->
-  <button id=""open-combat"" title="Открыть бой" onclick="window.__openCombat()" style="position:fixed;right:14px;bottom:14px;z-index:90;border-radius:999px;padding:10px 14px;border:none;background:#7a57c6;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.35)">Бой</button>
+  <button id=""open-combat"" title="Открыть бой" data-legacy="1" title="Legacy overlay disabled" style="position:fixed;right:14px;bottom:14px;z-index:90;border-radius:999px;padding:10px 14px;border:none;background:#7a57c6;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.35)">Бой</button>
 
   <!-- Combat Overlay -->
   <div id="combatOverlay" class="combat hidden" aria-hidden="true">
@@ -156,7 +156,7 @@
       var input = document.getElementById('chatInput');
       var v = (input && input.value || '').trim();
       if (!v) return;
-      if (v.indexOf('_проверка_боя')>-1) window.__openCombat();
+      if (v.indexOf('_проверка_боя')>-1) /* legacy combat overlay disabled */
       input.value='';
     };
   })();
@@ -164,7 +164,7 @@
 
   <!-- External scripts -->
  
-  <script src="blocks/combat/combat.js?v=6"></script>
+  <!-- legacy: <script src="blocks/combat/combat.js?v=6"></script> -->
   <script type="module" src="/js/combat-overlay.js"></script>
   
 </body>

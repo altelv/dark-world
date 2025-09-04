@@ -1,0 +1,27 @@
+Dark World — Patch to align SVG Combat Overlay with Passport v3
+
+Changes:
+1) Activated SVG overlay as the single source of truth; disabled legacy HTML overlay triggers.
+   - index.html: removed onclick to window.__openCombat() (now marked legacy); auto-open call disabled.
+   - Commented legacy includes: blocks/combat/combat.css and blocks/combat/combat.js.
+
+2) Movement highlights updated (hlMoves):
+   - forward 1, forward 2, left 1, right 1, and all four diagonals (1 cell each),
+   - orientation follows camera rotation.
+
+3) Buttons fixed:
+   - Renamed btn_ATTAK -> btn_attack in SVG,
+   - Removed duplicate btn_potion1,
+   - Added handlers for: attack, defense, ranger_precise, throw, potion, bandage, rollback, end_turn, turn_left/right.
+
+4) Camera rotation made robust:
+   - Rotation axis computed from #board.getBBox() center (no magic numbers).
+
+5) Event bridge:
+   - UI dispatches CustomEvent('dw:combat:action', {kind}) on action clicks.
+   - End turn additionally dispatches CustomEvent('dw:combat:endTurn').
+
+Files to replace (keep relative paths):
+- /combat-overlay.svg
+- /js/combat-overlay.js
+- /index.html
