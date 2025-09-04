@@ -4,6 +4,7 @@
 // - Robust cell parsing from id="cell_x_y" if no data-x/y.
 // - World-camera mapping; hero fixed at (0,0).
 
+
 const ASSETS = {
   hero: "/assets/combat/hero.png",
   enemy: "/assets/combat/enemy.png",
