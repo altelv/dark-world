@@ -3,15 +3,16 @@
   if (window[BOOT_NS]) return;
 
   const state = {
-    root: null,       // overlay root inside #center
+    root: null,       // fixed overlay element
     svg: null,
-    cells: [],
+    cells: [],        // [{el, x, y, bbox}]
     grid: { minX:0, maxX:0, minY:0, maxY:0, width:0, height:0 },
-    facing: 0, // 0=up,1=right,2=down,3=left
+    facing: 0,        // 0=up,1=right,2=down,3=left
     heroWindow: { x: 0, y: 0 },
     heroWorld: { x: 5, y: 5 },
     worldSize: { w: 10, h: 10 },
     enemies: [],
+    anchor: null,     // #center node
   };
 
   function log(...args){ console.log("[CombatOverlay]", ...args); }
@@ -20,25 +21,25 @@
   // ---- CSS injection ----
   function injectCSS(){
     const css = `
-      /* Anchor container fills the center column */
+      /* Fixed overlay aligned to center column rectangle */
       #dw-combat-root {
-        position: absolute !important;
-        inset: 0 !important;
+        position: fixed !important;
+        pointer-events: none; /* enable selectively in svg */
         z-index: 2147483647 !important;
       }
-      #dw-combat-root svg#dw-combat-svg {
+      #dw-combat-root > svg#dw-combat-svg {
         width: 100%;
         height: 100%;
         display: block;
       }
-      /* Make everything clickable by default in overlay */
+      /* Make buttons clickable and add a quick "press" feedback */
+      #dw-combat-root [id^="btn_"] { cursor: pointer; transition: transform .06s ease, filter .06s ease; pointer-events: auto; }
+      #dw-combat-root [id^="btn_"].pressed { transform: translateY(1px) scale(0.98); filter: brightness(0.92); }
+      /* Ensure normal svg content still receives events if needed */
       #dw-combat-root svg * { pointer-events: auto; }
-      /* Buttons: hand cursor + pressed effect */
-      #dw-combat-root [id^="btn_"] { cursor: pointer; transition: transform .08s ease, filter .08s ease; }
-      #dw-combat-root [id^="btn_"].pressed { transform: scale(0.94); filter: brightness(0.9); }
-      /* Highlights */
+
+      /* Highlights & enemy markers */
       #dw-combat-root .dw-hl-move { fill: rgba(255,255,255,0.12); stroke: rgba(255,255,255,0.9); stroke-width: 2; rx: 6; }
-      /* Enemy marker */
       #dw-combat-root .dw-enemy { fill: rgba(220,40,40,0.95); }
     `;
     const style = document.createElement("style");
@@ -65,14 +66,21 @@
     return { x: state.heroWindow.x + p.dx, y: state.heroWindow.y + p.dy };
   }
 
-  // ---- Cells ----
+  // ---- Cells collection (new SVG structure) ----
   function collectCells(){
     state.cells = [];
-    const list = state.svg.querySelectorAll("#cells [data-x][data-y]");
+    // Prefer cells inside board/cam/cells
+    const list = state.svg.querySelectorAll("#board #cam #cells rect[id^='cell_']");
+    if (!list.length) {
+      // fallback: any rect with id pattern
+      const fallback = state.svg.querySelectorAll("rect[id^='cell_']");
+      fallback.forEach(el => list.push(el));
+    }
     list.forEach(el => {
-      const x = parseInt(el.getAttribute("data-x"),10);
-      const y = parseInt(el.getAttribute("data-y"),10);
-      if (isNaN(x) || isNaN(y)) return;
+      const m = el.id.match(/^cell_(-?\d+)_(-?\d+)$/);
+      if (!m) return;
+      const x = parseInt(m[1],10);
+      const y = parseInt(m[2],10);
       const bbox = el.getBBox ? el.getBBox() : null;
       state.cells.push({ el, x, y, bbox });
     });
@@ -83,8 +91,15 @@
     state.grid.maxY = Math.max(...state.cells.map(c => c.y));
     state.grid.width = state.grid.maxX - state.grid.minX + 1;
     state.grid.height = state.grid.maxY - state.grid.minY + 1;
-    state.heroWindow.x = Math.round((state.grid.minX + state.grid.maxX)/2);
-    state.heroWindow.y = Math.round((state.grid.minY + state.grid.maxY)/2);
+    // Hero sits at logical (0,0) of window — find its cell id cell_0_0 if present, otherwise center
+    const heroCell = state.cells.find(c => c.x===0 && c.y===0);
+    if (heroCell) {
+      state.heroWindow.x = 0;
+      state.heroWindow.y = 0;
+    } else {
+      state.heroWindow.x = Math.round((state.grid.minX + state.grid.maxX)/2);
+      state.heroWindow.y = Math.round((state.grid.minY + state.grid.maxY)/2);
+    }
     return true;
   }
   function getCell(x,y){ return state.cells.find(c => c.x===x && c.y===y); }
@@ -167,7 +182,7 @@
     renderEnemies();
   }
 
-  // ---- Buttons binding with pressed effect ----
+  // ---- Buttons ----
   function mapBtnToKind(id){
     const low = id.toLowerCase();
     if (low.includes("turn_right")) return "__turn_right";
@@ -175,36 +190,22 @@
     if (low.includes("attack")) return "attack";
     if (low.includes("defence") || low.includes("defense")) return "defense";
     if (low.includes("ranger") && low.includes("precise")) return "ranger_precise";
-    if (low.includes("throw") || low.includes("metnut") || low.includes("metanie")) return "throw";
+    if (low.includes("throw")) return "throw";
     if (low.includes("potion")) return "potion";
     if (low.includes("bandage")) return "bandage";
     if (low.includes("rollback")) return "rollback";
-    if (low.includes("end")) return "end_turn";
+    if (low.includes("end_turn") || low.endsWith("_end")) return "end_turn";
     return null;
   }
-  function pressedOn(el){ el.classList.add("pressed"); }
-  function pressedOff(el){ el.classList.remove("pressed"); }
+  function quickPress(el){
+    el.classList.add("pressed");
+    setTimeout(()=> el.classList.remove("pressed"), 110);
+  }
   function bindButtons(){
-    // pressed visuals
-    state.svg.addEventListener("pointerdown", (e)=>{
-      const t = e.target.closest("[id^='btn_']");
-      if (!t) return;
-      pressedOn(t);
-    });
-    state.svg.addEventListener("pointerup", (e)=>{
-      const t = e.target.closest("[id^='btn_']");
-      if (!t) return;
-      pressedOff(t);
-    });
-    state.svg.addEventListener("pointerleave", (e)=>{
-      const t = e.target.closest("[id^='btn_']");
-      if (!t) return;
-      pressedOff(t);
-    });
-    // click actions
     state.svg.addEventListener("click", (e) => {
       const t = e.target.closest("[id^='btn_']");
       if (!t) return;
+      quickPress(t);
       const kind = mapBtnToKind(t.id);
       if (!kind) return;
       if (kind === "__turn_left") { state.facing = ((state.facing + 3) % 4); repaint(); return; }
@@ -227,31 +228,39 @@
     repaint();
   }
 
-  // ---- Setup overlay inside center column ----
+  // ---- Position overlay to center column (fixed rect) ----
   function findCenterNode(){
-    // prefer #center, fallback to middle .col
     let node = document.querySelector("#center");
     if (node) return node;
     const cols = Array.from(document.querySelectorAll(".col"));
     if (cols.length === 3) return cols[1];
     return document.body;
   }
+  function positionToAnchor(){
+    if (!state.anchor || !state.root) return;
+    const r = state.anchor.getBoundingClientRect();
+    state.root.style.left = (r.left + window.scrollX) + "px";
+    state.root.style.top = (r.top + window.scrollY) + "px";
+    state.root.style.width = r.width + "px";
+    state.root.style.height = r.height + "px";
+  }
 
+  // ---- Init ----
   async function init(){
     try{
       injectCSS();
-      const center = findCenterNode();
-      // ensure center is relatively positioned
-      const cs = window.getComputedStyle(center);
-      if (cs.position === "static") center.style.position = "relative";
+      state.anchor = findCenterNode();
 
-      // root overlay
+      // Create fixed root
       const root = document.createElement("div");
       root.id = "dw-combat-root";
-      center.appendChild(root);
+      document.body.appendChild(root);
       state.root = root;
+      positionToAnchor();
+      window.addEventListener("resize", positionToAnchor, { passive:true });
+      window.addEventListener("scroll", positionToAnchor, { passive:true });
 
-      // load or find svg
+      // Load or adopt svg
       let svg = document.querySelector("#dw-combat-svg");
       if (!svg) {
         try {
@@ -268,13 +277,13 @@
       root.appendChild(svg);
       state.svg = svg;
 
-      // Migrate ids (rename legacy etc.). Bandage hex NO LONGER forced (svg fixed).
+      // Migrate IDs (legacy fixes only)
       if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
         window.DWSVGMigrate.run(state.svg);
       }
 
       const ok = collectCells();
-      if (!ok) { console.warn("No #cells [data-x][data-y] found for highlights."); }
+      if (!ok) { console.warn("No cells collected — check rect ids like cell_-1_2 inside #board #cam #cells."); }
 
       bindButtons();
       window.addEventListener("dw:combat:state", onState);
@@ -288,7 +297,7 @@
         setEnemies: (arr)=>{ state.enemies = Array.isArray(arr)? arr.map(e=>({id:e.id,pos:{x:e.pos.x|0,y:e.pos.y|0},alive:e.alive!==false})) : []; repaint(); },
       };
 
-      log("Overlay anchored to #center and ready");
+      log("Overlay fixed-aligned to center and ready");
     }catch(err){
       console.error("Combat overlay init failed:", err);
     }
