@@ -3,20 +3,51 @@
   if (window[BOOT_NS]) return;
 
   const state = {
+    root: null,       // overlay root inside #center
     svg: null,
-    cells: [], // [{el, x, y, bbox}]
+    cells: [],
     grid: { minX:0, maxX:0, minY:0, maxY:0, width:0, height:0 },
     facing: 0, // 0=up,1=right,2=down,3=left
-    heroWindow: { x: 0, y: 0 }, // cell coords in window (center)
-    heroWorld: { x: 5, y: 5 },  // world coords (10x10 default)
+    heroWindow: { x: 0, y: 0 },
+    heroWorld: { x: 5, y: 5 },
     worldSize: { w: 10, h: 10 },
-    enemies: [], // [{id,pos:{x,y},alive:true}]
+    enemies: [],
   };
 
   function log(...args){ console.log("[CombatOverlay]", ...args); }
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 
-  // --- Projection world -> window (relative to hero + facing) ---
+  // ---- CSS injection ----
+  function injectCSS(){
+    const css = `
+      /* Anchor container fills the center column */
+      #dw-combat-root {
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 2147483647 !important;
+      }
+      #dw-combat-root svg#dw-combat-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      /* Make everything clickable by default in overlay */
+      #dw-combat-root svg * { pointer-events: auto; }
+      /* Buttons: hand cursor + pressed effect */
+      #dw-combat-root [id^="btn_"] { cursor: pointer; transition: transform .08s ease, filter .08s ease; }
+      #dw-combat-root [id^="btn_"].pressed { transform: scale(0.94); filter: brightness(0.9); }
+      /* Highlights */
+      #dw-combat-root .dw-hl-move { fill: rgba(255,255,255,0.12); stroke: rgba(255,255,255,0.9); stroke-width: 2; rx: 6; }
+      /* Enemy marker */
+      #dw-combat-root .dw-enemy { fill: rgba(220,40,40,0.95); }
+    `;
+    const style = document.createElement("style");
+    style.id = "dw-combat-style";
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  // ---- Projection world -> window ----
   function projectDelta(dx, dy, facing){
     const f = ((facing%4)+4)%4;
     switch(f){
@@ -34,7 +65,7 @@
     return { x: state.heroWindow.x + p.dx, y: state.heroWindow.y + p.dy };
   }
 
-  // --- SVG helpers ---
+  // ---- Cells ----
   function collectCells(){
     state.cells = [];
     const list = state.svg.querySelectorAll("#cells [data-x][data-y]");
@@ -52,16 +83,13 @@
     state.grid.maxY = Math.max(...state.cells.map(c => c.y));
     state.grid.width = state.grid.maxX - state.grid.minX + 1;
     state.grid.height = state.grid.maxY - state.grid.minY + 1;
-    // place hero roughly at center
     state.heroWindow.x = Math.round((state.grid.minX + state.grid.maxX)/2);
     state.heroWindow.y = Math.round((state.grid.minY + state.grid.maxY)/2);
     return true;
   }
-  function getCell(x,y){
-    return state.cells.find(c => c.x===x && c.y===y);
-  }
+  function getCell(x,y){ return state.cells.find(c => c.x===x && c.y===y); }
 
-  // --- Rendering helper layers ---
+  // ---- Helper layers ----
   function ensureLayer(id){
     let g = state.svg.querySelector("#"+id);
     if (!g){
@@ -73,26 +101,22 @@
     }
     return g;
   }
-  function drawRect(g, bbox, opts){
+  function drawRectEl(bbox, cls){
     const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     r.setAttribute("x", bbox.x); r.setAttribute("y", bbox.y);
     r.setAttribute("width", bbox.width); r.setAttribute("height", bbox.height);
-    if (opts.rx) r.setAttribute("rx", opts.rx);
-    if (opts.fill) r.setAttribute("fill", opts.fill);
-    if (opts.stroke) r.setAttribute("stroke", opts.stroke);
-    if (opts.strokeWidth) r.setAttribute("stroke-width", opts.strokeWidth);
-    g.appendChild(r);
+    r.setAttribute("rx", 6);
+    r.setAttribute("class", cls);
+    return r;
   }
-  function drawCircle(g, cx, cy, r, opts){
+  function drawCircleEl(cx, cy, r, cls){
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
-    if (opts.fill) c.setAttribute("fill", opts.fill);
-    if (opts.stroke) c.setAttribute("stroke", opts.stroke);
-    if (opts.strokeWidth) c.setAttribute("stroke-width", opts.strokeWidth);
-    g.appendChild(c);
+    c.setAttribute("class", cls);
+    return c;
   }
 
-  // --- Highlights (moves) ---
+  // ---- Rendering ----
   function renderMoveHighlights(){
     const g = ensureLayer("dw-highlights-move");
     const base = [
@@ -111,12 +135,10 @@
       const cy = state.heroWindow.y + p.dy;
       const cell = getCell(cx, cy);
       if (cell && cell.bbox){
-        drawRect(g, cell.bbox, { fill:"rgba(255,255,255,0.12)", stroke:"rgba(255,255,255,0.85)", strokeWidth:2, rx:6 });
+        g.appendChild(drawRectEl(cell.bbox, "dw-hl-move"));
       }
     });
   }
-
-  // --- Enemy markers (including off-screen edge dots) ---
   function renderEnemies(){
     const g = ensureLayer("dw-markers-enemies");
     state.enemies.forEach(e => {
@@ -135,18 +157,17 @@
         const bb = targetCell.bbox;
         const cx = bb.x + bb.width/2;
         const cy = bb.y + bb.height/2;
-        drawCircle(g, cx, cy, Math.min(bb.width, bb.height)*0.18, { fill:"rgba(220,40,40,0.95)" });
+        g.appendChild(drawCircleEl(cx, cy, Math.min(bb.width, bb.height)*0.18, "dw-enemy"));
       }
     });
   }
-
   function repaint(){
     if (!state.svg) return;
     renderMoveHighlights();
     renderEnemies();
   }
 
-  // --- Buttons ---
+  // ---- Buttons binding with pressed effect ----
   function mapBtnToKind(id){
     const low = id.toLowerCase();
     if (low.includes("turn_right")) return "__turn_right";
@@ -161,7 +182,26 @@
     if (low.includes("end")) return "end_turn";
     return null;
   }
+  function pressedOn(el){ el.classList.add("pressed"); }
+  function pressedOff(el){ el.classList.remove("pressed"); }
   function bindButtons(){
+    // pressed visuals
+    state.svg.addEventListener("pointerdown", (e)=>{
+      const t = e.target.closest("[id^='btn_']");
+      if (!t) return;
+      pressedOn(t);
+    });
+    state.svg.addEventListener("pointerup", (e)=>{
+      const t = e.target.closest("[id^='btn_']");
+      if (!t) return;
+      pressedOff(t);
+    });
+    state.svg.addEventListener("pointerleave", (e)=>{
+      const t = e.target.closest("[id^='btn_']");
+      if (!t) return;
+      pressedOff(t);
+    });
+    // click actions
     state.svg.addEventListener("click", (e) => {
       const t = e.target.closest("[id^='btn_']");
       if (!t) return;
@@ -173,7 +213,7 @@
     });
   }
 
-  // --- Sync with logic state (hero/enemies from dw:combat:state) ---
+  // ---- Sync from logic ----
   function onState(ev){
     const st = ev && ev.detail && ev.detail.state;
     if (!st) return;
@@ -187,45 +227,71 @@
     repaint();
   }
 
-  // --- Init ---
+  // ---- Setup overlay inside center column ----
+  function findCenterNode(){
+    // prefer #center, fallback to middle .col
+    let node = document.querySelector("#center");
+    if (node) return node;
+    const cols = Array.from(document.querySelectorAll(".col"));
+    if (cols.length === 3) return cols[1];
+    return document.body;
+  }
+
   async function init(){
-    let svg = document.querySelector("#dw-combat-svg");
-    if (!svg) {
-      try {
-        const resp = await fetch("combat-overlay.svg", { cache:"no-store" });
-        if (resp.ok){
-          const text = await resp.text();
-          const wrap = document.createElement("div"); wrap.innerHTML = text.trim();
-          svg = wrap.querySelector("svg");
-          if (svg) { svg.id = "dw-combat-svg"; document.body.appendChild(svg); }
-        }
-      } catch(e){ /* ignore */ }
+    try{
+      injectCSS();
+      const center = findCenterNode();
+      // ensure center is relatively positioned
+      const cs = window.getComputedStyle(center);
+      if (cs.position === "static") center.style.position = "relative";
+
+      // root overlay
+      const root = document.createElement("div");
+      root.id = "dw-combat-root";
+      center.appendChild(root);
+      state.root = root;
+
+      // load or find svg
+      let svg = document.querySelector("#dw-combat-svg");
+      if (!svg) {
+        try {
+          const resp = await fetch("combat-overlay.svg", { cache:"no-store" });
+          if (resp.ok){
+            const text = await resp.text();
+            const wrap = document.createElement("div"); wrap.innerHTML = text.trim();
+            svg = wrap.querySelector("svg");
+            if (svg) { svg.id = "dw-combat-svg"; }
+          }
+        } catch(e){ /* ignore */ }
+      }
+      if (!svg) { console.error("dw-combat-svg not found"); return; }
+      root.appendChild(svg);
+      state.svg = svg;
+
+      // Migrate ids (rename legacy etc.). Bandage hex NO LONGER forced (svg fixed).
+      if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
+        window.DWSVGMigrate.run(state.svg);
+      }
+
+      const ok = collectCells();
+      if (!ok) { console.warn("No #cells [data-x][data-y] found for highlights."); }
+
+      bindButtons();
+      window.addEventListener("dw:combat:state", onState);
+
+      repaint();
+
+      window[BOOT_NS] = {
+        setFacing: (f)=>{ state.facing=((f|0)%4+4)%4; repaint(); },
+        getFacing: ()=> state.facing,
+        setHeroWorld: (x,y)=>{ state.heroWorld.x=x|0; state.heroWorld.y=y|0; repaint(); },
+        setEnemies: (arr)=>{ state.enemies = Array.isArray(arr)? arr.map(e=>({id:e.id,pos:{x:e.pos.x|0,y:e.pos.y|0},alive:e.alive!==false})) : []; repaint(); },
+      };
+
+      log("Overlay anchored to #center and ready");
+    }catch(err){
+      console.error("Combat overlay init failed:", err);
     }
-    if (!svg) { console.error("dw-combat-svg not found"); return; }
-    state.svg = svg;
-
-    if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
-      window.DWSVGMigrate.run(state.svg);
-    }
-
-    const ok = collectCells();
-    if (!ok) { console.warn("No #cells [data-x][data-y] found for highlights."); }
-
-    bindButtons();
-    window.addEventListener("dw:combat:state", onState);
-
-    repaint();
-
-    window[BOOT_NS] = {
-      setFacing: (f)=>{ state.facing=((f|0)%4+4)%4; repaint(); },
-      getFacing: ()=> state.facing,
-      setHeroWorld: (x,y)=>{ state.heroWorld.x=x|0; state.heroWorld.y=y|0; repaint(); },
-      setEnemies: (arr)=>{ state.enemies = Array.isArray(arr)? arr.map(e=>({id:e.id,pos:{x:e.pos.x|0,y:e.pos.y|0},alive:e.alive!==false})) : []; repaint(); },
-      getGrid: ()=> ({...state.grid}),
-      getHeroWindow: ()=> ({...state.heroWindow}),
-    };
-
-    log("Overlay projection ready");
   }
 
   if (document.readyState === "complete" || document.readyState === "interactive") init();

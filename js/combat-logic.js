@@ -4,7 +4,7 @@
 
   const state = {
     turn: 1,
-    hero: { id: "hero", class: "Рейнджер", pos: { x: 5, y: 5 }, statuses: [] }, // world coords by default
+    hero: { id: "hero", class: "Рейнджер", pos: { x: 5, y: 5 }, statuses: [] },
     enemies: [],
   };
 
