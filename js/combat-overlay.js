@@ -13,6 +13,7 @@
     heroWorld: { x: 5, y: 5 },
     worldSize: { w: 10, h: 10 },
     enemies: [],
+    covers: [],
     anchor: null,
     pan: { g:null, clipId:null, cellW:0, cellH:0, offX:0, offY:0, animId:0 },
   };
@@ -26,15 +27,20 @@
     const css = `
       #dw-combat-root { position: fixed !important; z-index: 2147483647 !important; }
       #dw-combat-root > svg#dw-combat-svg { width:100%; height:100%; display:block; }
+
       /* Buttons */
       #dw-combat-root [id^="btn_"] { cursor: pointer; transition: transform .06s ease, filter .06s ease; }
       #dw-combat-root [id^="btn_"].pressed { transform: translateY(1px) scale(0.98); filter: brightness(0.92); }
-      /* Highlights: filled tiles, no stroke */
-      .dw-hl-move { fill: rgba(255,255,255,0.18); pointer-events: auto; }
-      /* Enemy marker */
-      .dw-enemy { fill: rgba(220,40,40,0.95); pointer-events: none; }
-      /* Cells themselves тоже кликабельны */
-      #dw-combat-root #board #cam #cells rect[id^="cell_"] { cursor: pointer; }
+
+      /* Highlights: filled tiles, без обводки (чуть светлее поля) */
+      .dw-hl-move { fill: rgba(255,255,255,0.26); pointer-events: auto; }
+
+      /* Cover (укрытия) */
+      .dw-cover { fill: rgba(140,140,160,0.22); }
+
+      /* Tokens */
+      .dw-enemy { fill: rgba(220,40,40,0.95); }
+      .dw-hero  { fill: rgba(120,140,255,0.95); }
     `;
     const style = document.createElement("style");
     style.id = "dw-combat-style";
@@ -128,9 +134,8 @@
         state.svg.appendChild(g);
       }
       state.pan.g = g;
-    } else {
-      while (state.pan.g.firstChild) state.pan.g.removeChild(state.pan.g.firstChild);
     }
+    // IMPORTANT: do NOT clear children here; each layer will clear itself.
     const px = state.pan.offX * state.pan.cellW;
     const py = state.pan.offY * state.pan.cellH;
     state.pan.g.setAttribute("transform", `translate(${px} ${py})`);
@@ -143,28 +148,26 @@
       g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.setAttribute("id", id);
       pan.appendChild(g);
-    } else {
-      // If group is not under pan — move it
-      if (g.parentNode !== pan) {
-        g.parentNode.removeChild(g);
-        pan.appendChild(g);
-      }
-      while (g.firstChild) g.removeChild(g.firstChild);
+    } else if (g.parentNode !== pan) {
+      g.parentNode.removeChild(g);
+      pan.appendChild(g);
     }
+    while (g.firstChild) g.removeChild(g.firstChild);
     return g;
   }
-  function drawRectFromCell(cell, cls, dataset){
+  function rectFromCell(cell, cls, data){
     const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     r.setAttribute("x", cell.rx); r.setAttribute("y", cell.ry);
     r.setAttribute("width", cell.rw); r.setAttribute("height", cell.rh);
     r.setAttribute("rx", 6);
     if (cls) r.setAttribute("class", cls);
-    if (dataset){
-      Object.keys(dataset).forEach(k => r.dataset[k] = dataset[k]);
-    }
+    if (data) Object.assign(r.dataset, data);
     return r;
   }
-  function drawCircleEl(cx, cy, r, cls){
+  function circleAtCellCenter(cell, radiusK, cls){
+    const cx = cell.rx + cell.rw/2;
+    const cy = cell.ry + cell.rh/2;
+    const r = Math.min(cell.rw, cell.rh) * radiusK;
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
     if (cls) c.setAttribute("class", cls);
@@ -187,9 +190,18 @@
       const cy = state.heroWindow.y + v.dy;
       const cell = getCell(cx, cy);
       if (cell){
-        const rect = drawRectFromCell(cell, "dw-hl-move", { cellx: String(cx), celly: String(cy) });
-        g.appendChild(rect);
+        g.appendChild(rectFromCell(cell, "dw-hl-move", { cellx:String(cx), celly:String(cy) }));
       }
+    });
+  }
+
+  // ---- Cover (debug) ----
+  function renderCovers(){
+    const g = ensureLayer("dw-tiles-cover");
+    state.covers.forEach(pos => {
+      const w = worldToWindow(pos.x, pos.y);
+      const cell = getCell(w.x, w.y);
+      if (cell) g.appendChild(rectFromCell(cell, "dw-cover"));
     });
   }
 
@@ -201,26 +213,25 @@
       const w = worldToWindow(e.pos.x, e.pos.y);
       const inside = (w.x>=state.grid.minX && w.x<=state.grid.maxX && w.y>=state.grid.minY && w.y<=state.grid.maxY);
       let targetCell = null;
-      if (inside) {
-        targetCell = getCell(w.x, w.y);
-      } else {
-        const cx = clamp(w.x, state.grid.minX, state.grid.maxX);
-        const cy = clamp(w.y, state.grid.minY, state.grid.maxY);
-        targetCell = getCell(cx, cy);
-      }
-      if (targetCell){
-        const cx = targetCell.rx + targetCell.rw/2;
-        const cy = targetCell.ry + targetCell.rh/2;
-        const r = Math.min(targetCell.rw, targetCell.rh) * 0.18;
-        g.appendChild(drawCircleEl(cx, cy, r, "dw-enemy"));
-      }
+      if (inside) targetCell = getCell(w.x, w.y);
+      else targetCell = getCell(clamp(w.x, state.grid.minX, state.grid.maxX), clamp(w.y, state.grid.minY, state.grid.maxY));
+      if (targetCell) g.appendChild(circleAtCellCenter(targetCell, 0.18, "dw-enemy"));
     });
+  }
+
+  // ---- Hero token (always at window 0,0) ----
+  function renderHero(){
+    const g = ensureLayer("dw-hero");
+    const cell = getCell(state.heroWindow.x, state.heroWindow.y);
+    if (cell) g.appendChild(circleAtCellCenter(cell, 0.22, "dw-hero"));
   }
 
   function repaint(){
     if (!state.svg) return;
+    renderCovers();
     renderMoveHighlights();
     renderEnemies();
+    renderHero();
   }
 
   // ---- Movement ----
@@ -265,14 +276,12 @@
 
   // ---- Click handling ----
   function onClick(e){
-    // 1) Click on button
     const btn = e.target.closest("[id^='btn_']");
     if (btn){
       btn.classList.add("pressed"); setTimeout(()=> btn.classList.remove("pressed"), 110);
       const id = btn.id.toLowerCase();
       if (id.includes("turn_left")) { state.facing = (state.facing + 3) % 4; repaint(); return; }
       if (id.includes("turn_right")){ state.facing = (state.facing + 1) % 4; repaint(); return; }
-      // Pass semantic actions to logic
       let kind = null;
       if (id.includes("attack")) kind="attack";
       else if (id.includes("defence")||id.includes("defense")) kind="defense";
@@ -285,22 +294,16 @@
       if (kind) window.dispatchEvent(new CustomEvent("dw:combat:action", { detail: { kind } }));
       return;
     }
-    // 2) Click on highlight (preferred)
     const hl = e.target.closest(".dw-hl-move");
-    if (hl && hl.dataset && hl.dataset.cellx){
+    if (hl && hl.dataset){
       const wx = parseInt(hl.dataset.cellx,10);
       const wy = parseInt(hl.dataset.celly,10);
       if (performMoveToWindowCell(wx, wy)) return;
     }
-    // 3) Click on base cell
     const rect = e.target.closest("#board #cam #cells rect[id^='cell_']");
     if (rect){
       const m = /^cell_(-?\d+)_(-?\d+)$/.exec(rect.id);
-      if (m){
-        const wx = parseInt(m[1],10);
-        const wy = parseInt(m[2],10);
-        performMoveToWindowCell(wx, wy);
-      }
+      if (m) performMoveToWindowCell(parseInt(m[1],10), parseInt(m[2],10));
     }
   }
 
@@ -370,7 +373,27 @@
     const ok = collectCells();
     if (!ok) { console.warn("No cells collected — expect rect ids like cell_-1_2 inside #board #cam #cells."); }
 
-    // Events
+    // DEBUG SEED: enemies + covers if logic/overlay don't provide
+    if (window.DWCombatLogic && typeof window.DWCombatLogic.getState === "function"){
+      const st = window.DWCombatLogic.getState();
+      state.enemies = st.enemies || [];
+    }
+    if (!state.enemies || state.enemies.length === 0){
+      state.enemies = [
+        { id:"nearTop", pos:{ x: state.heroWorld.x, y: state.heroWorld.y-2 }, alive:true },
+        { id:"far",     pos:{ x: Math.min(state.worldSize.w-1, state.heroWorld.x+3), y: Math.min(state.worldSize.h-1, state.heroWorld.y+3) }, alive:true },
+      ];
+      if (window.DWCombatLogic && typeof window.DWCombatLogic.setEnemies === "function"){
+        window.DWCombatLogic.setEnemies(state.enemies);
+      }
+    }
+    // seed 3 cover tiles around hero
+    state.covers = [
+      { x: state.heroWorld.x-1, y: state.heroWorld.y-1 },
+      { x: state.heroWorld.x+1, y: state.heroWorld.y   },
+      { x: state.heroWorld.x,   y: state.heroWorld.y+2 },
+    ].filter(p => p.x>=0 && p.y>=0 && p.x<state.worldSize.w && p.y<state.worldSize.h);
+
     state.svg.addEventListener("click", onClick);
     window.addEventListener("dw:combat:state", onState);
 
@@ -381,10 +404,11 @@
       getFacing: ()=> state.facing,
       setHeroWorld: (x,y)=>{ state.heroWorld.x=x|0; state.heroWorld.y=y|0; repaint(); },
       setEnemies: (arr)=>{ state.enemies = Array.isArray(arr)? arr.map(e=>({id:e.id,pos:{x:e.pos.x|0,y:e.pos.y|0},alive:e.alive!==false})) : []; repaint(); },
+      setCovers: (arr)=>{ state.covers = Array.isArray(arr)? arr.map(p=>({x:p.x|0, y:p.y|0})) : []; repaint(); },
       getGrid: ()=> ({...state.grid}),
     };
 
-    log("Overlay v3.7 ready");
+    log("Overlay v3.8 ready");
   }
 
   if (document.readyState === "complete" || document.readyState === "interactive") init();
