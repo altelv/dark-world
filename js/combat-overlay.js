@@ -1,46 +1,40 @@
+
 (function () {
   const BOOT_NS = "DWCombatOverlay";
   if (window[BOOT_NS]) return;
 
   const state = {
-    root: null,       // fixed overlay element
+    root: null,
     svg: null,
-    cells: [],        // [{el, x, y, bbox}]
+    cells: [],
     grid: { minX:0, maxX:0, minY:0, maxY:0, width:0, height:0 },
-    facing: 0,        // 0=up,1=right,2=down,3=left
+    facing: 0,
     heroWindow: { x: 0, y: 0 },
     heroWorld: { x: 5, y: 5 },
     worldSize: { w: 10, h: 10 },
     enemies: [],
-    anchor: null,     // #center node
+    anchor: null,
+    pan: { g:null, clipId:null, cellW:0, cellH:0, offX:0, offY:0, animId:0 },
   };
 
   function log(...args){ console.log("[CombatOverlay]", ...args); }
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function num(v, fallback){ const n = parseFloat(v); return isFinite(n)? n : fallback; }
 
-  // ---- CSS injection ----
+  // ---- CSS ----
   function injectCSS(){
     const css = `
-      /* Fixed overlay aligned to center column rectangle */
-      #dw-combat-root {
-        position: fixed !important;
-        pointer-events: none; /* enable selectively in svg */
-        z-index: 2147483647 !important;
-      }
-      #dw-combat-root > svg#dw-combat-svg {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-      /* Make buttons clickable and add a quick "press" feedback */
-      #dw-combat-root [id^="btn_"] { cursor: pointer; transition: transform .06s ease, filter .06s ease; pointer-events: auto; }
+      #dw-combat-root { position: fixed !important; z-index: 2147483647 !important; }
+      #dw-combat-root > svg#dw-combat-svg { width:100%; height:100%; display:block; }
+      /* Buttons */
+      #dw-combat-root [id^="btn_"] { cursor: pointer; transition: transform .06s ease, filter .06s ease; }
       #dw-combat-root [id^="btn_"].pressed { transform: translateY(1px) scale(0.98); filter: brightness(0.92); }
-      /* Ensure normal svg content still receives events if needed */
-      #dw-combat-root svg * { pointer-events: auto; }
-
-      /* Highlights & enemy markers */
-      #dw-combat-root .dw-hl-move { fill: rgba(255,255,255,0.12); stroke: rgba(255,255,255,0.9); stroke-width: 2; rx: 6; }
-      #dw-combat-root .dw-enemy { fill: rgba(220,40,40,0.95); }
+      /* Highlights: filled tiles, no stroke */
+      .dw-hl-move { fill: rgba(255,255,255,0.18); pointer-events: auto; }
+      /* Enemy marker */
+      .dw-enemy { fill: rgba(220,40,40,0.95); pointer-events: none; }
+      /* Cells themselves тоже кликабельны */
+      #dw-combat-root #board #cam #cells rect[id^="cell_"] { cursor: pointer; }
     `;
     const style = document.createElement("style");
     style.id = "dw-combat-style";
@@ -48,14 +42,24 @@
     document.head.appendChild(style);
   }
 
-  // ---- Projection world -> window ----
+  // ---- Projection world <-> window ----
   function projectDelta(dx, dy, facing){
     const f = ((facing%4)+4)%4;
     switch(f){
-      case 0: return { dx: dx,   dy: dy   };      // up (north)
-      case 1: return { dx: dy,   dy: -dx  };      // right (east)
-      case 2: return { dx: -dx,  dy: -dy  };      // down (south)
-      case 3: return { dx: -dy,  dy: dx   };      // left (west)
+      case 0: return { dx: dx,   dy: dy   };
+      case 1: return { dx: dy,   dy: -dx  };
+      case 2: return { dx: -dx,  dy: -dy  };
+      case 3: return { dx: -dy,  dy: dx   };
+      default: return { dx, dy };
+    }
+  }
+  function unprojectDelta(dx, dy, facing){
+    const f = ((facing%4)+4)%4;
+    switch(f){
+      case 0: return { dx: dx,   dy: dy   };
+      case 1: return { dx: -dy,  dy: dx   };
+      case 2: return { dx: -dx,  dy: -dy  };
+      case 3: return { dx: dy,   dy: -dx  };
       default: return { dx, dy };
     }
   }
@@ -66,23 +70,21 @@
     return { x: state.heroWindow.x + p.dx, y: state.heroWindow.y + p.dy };
   }
 
-  // ---- Cells collection (new SVG structure) ----
+  // ---- Cells ----
   function collectCells(){
     state.cells = [];
-    // Prefer cells inside board/cam/cells
     const list = state.svg.querySelectorAll("#board #cam #cells rect[id^='cell_']");
-    if (!list.length) {
-      // fallback: any rect with id pattern
-      const fallback = state.svg.querySelectorAll("rect[id^='cell_']");
-      fallback.forEach(el => list.push(el));
-    }
     list.forEach(el => {
       const m = el.id.match(/^cell_(-?\d+)_(-?\d+)$/);
       if (!m) return;
       const x = parseInt(m[1],10);
       const y = parseInt(m[2],10);
       const bbox = el.getBBox ? el.getBBox() : null;
-      state.cells.push({ el, x, y, bbox });
+      const rx = num(el.getAttribute("x"), bbox?bbox.x:0);
+      const ry = num(el.getAttribute("y"), bbox?bbox.y:0);
+      const rw = num(el.getAttribute("width"), bbox?bbox.width:48);
+      const rh = num(el.getAttribute("height"), bbox?bbox.height:48);
+      state.cells.push({ el, x, y, bbox, rx, ry, rw, rh });
     });
     if (!state.cells.length) return false;
     state.grid.minX = Math.min(...state.cells.map(c => c.x));
@@ -91,69 +93,107 @@
     state.grid.maxY = Math.max(...state.cells.map(c => c.y));
     state.grid.width = state.grid.maxX - state.grid.minX + 1;
     state.grid.height = state.grid.maxY - state.grid.minY + 1;
-    // Hero sits at logical (0,0) of window — find its cell id cell_0_0 if present, otherwise center
-    const heroCell = state.cells.find(c => c.x===0 && c.y===0);
-    if (heroCell) {
-      state.heroWindow.x = 0;
-      state.heroWindow.y = 0;
-    } else {
-      state.heroWindow.x = Math.round((state.grid.minX + state.grid.maxX)/2);
-      state.heroWindow.y = Math.round((state.grid.minY + state.grid.maxY)/2);
-    }
+    state.heroWindow.x = 0;
+    state.heroWindow.y = 0;
+    const heroCell = state.cells.find(c => c.x===0 && c.y===0) || state.cells[0];
+    state.pan.cellW = heroCell ? heroCell.rw : 48;
+    state.pan.cellH = heroCell ? heroCell.rh : 48;
     return true;
   }
   function getCell(x,y){ return state.cells.find(c => c.x===x && c.y===y); }
 
-  // ---- Helper layers ----
+  // ---- Pan layer with clip to board ----
+  function ensurePanLayer(){
+    if (!state.pan.g){
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("id", "dw-pan");
+      // clip to board bbox
+      const board = state.svg.querySelector("#board");
+      if (board && board.getBBox){
+        const bb = board.getBBox();
+        const defs = state.svg.querySelector("defs") || (function(){ const d=document.createElementNS("http://www.w3.org/2000/svg","defs"); state.svg.insertBefore(d, state.svg.firstChild); return d; })();
+        const clip = document.createElementNS("http://www.w3.org/2000/svg","clipPath");
+        const clipId = "dw-board-clip";
+        clip.setAttribute("id", clipId);
+        const r = document.createElementNS("http://www.w3.org/2000/svg","rect");
+        r.setAttribute("x", bb.x); r.setAttribute("y", bb.y); r.setAttribute("width", bb.width); r.setAttribute("height", bb.height);
+        clip.appendChild(r); defs.appendChild(clip);
+        g.setAttribute("clip-path", "url(#"+clipId+")");
+        state.pan.clipId = clipId;
+      }
+      const afterBoard = state.svg.querySelector("#board");
+      if (afterBoard && afterBoard.parentNode){
+        afterBoard.parentNode.insertBefore(g, afterBoard.nextSibling);
+      } else {
+        state.svg.appendChild(g);
+      }
+      state.pan.g = g;
+    } else {
+      while (state.pan.g.firstChild) state.pan.g.removeChild(state.pan.g.firstChild);
+    }
+    const px = state.pan.offX * state.pan.cellW;
+    const py = state.pan.offY * state.pan.cellH;
+    state.pan.g.setAttribute("transform", `translate(${px} ${py})`);
+    return state.pan.g;
+  }
   function ensureLayer(id){
+    const pan = ensurePanLayer();
     let g = state.svg.querySelector("#"+id);
     if (!g){
       g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.setAttribute("id", id);
-      state.svg.appendChild(g);
+      pan.appendChild(g);
     } else {
+      // If group is not under pan — move it
+      if (g.parentNode !== pan) {
+        g.parentNode.removeChild(g);
+        pan.appendChild(g);
+      }
       while (g.firstChild) g.removeChild(g.firstChild);
     }
     return g;
   }
-  function drawRectEl(bbox, cls){
+  function drawRectFromCell(cell, cls, dataset){
     const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    r.setAttribute("x", bbox.x); r.setAttribute("y", bbox.y);
-    r.setAttribute("width", bbox.width); r.setAttribute("height", bbox.height);
+    r.setAttribute("x", cell.rx); r.setAttribute("y", cell.ry);
+    r.setAttribute("width", cell.rw); r.setAttribute("height", cell.rh);
     r.setAttribute("rx", 6);
-    r.setAttribute("class", cls);
+    if (cls) r.setAttribute("class", cls);
+    if (dataset){
+      Object.keys(dataset).forEach(k => r.dataset[k] = dataset[k]);
+    }
     return r;
   }
   function drawCircleEl(cx, cy, r, cls){
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
-    c.setAttribute("class", cls);
+    if (cls) c.setAttribute("class", cls);
     return c;
   }
 
-  // ---- Rendering ----
+  // ---- Highlights ----
   function renderMoveHighlights(){
     const g = ensureLayer("dw-highlights-move");
-    const base = [
-      { dx: 0, dy: +1 },
-      { dx: 0, dy: +2 },
-      { dx: -1, dy: 0 },
-      { dx: +1, dy: 0 },
-      { dx: +1, dy: +1 },
-      { dx: -1, dy: +1 },
-      { dx: +1, dy: -1 },
-      { dx: -1, dy: -1 },
+    const offs = [
+      // axial ±1
+      {dx:0,dy:+1},{dx:0,dy:-1},{dx:+1,dy:0},{dx:-1,dy:0},
+      // axial ±2
+      {dx:0,dy:+2},{dx:0,dy:-2},{dx:+2,dy:0},{dx:-2,dy:0},
+      // diagonals ±1
+      {dx:+1,dy:+1},{dx:+1,dy:-1},{dx:-1,dy:+1},{dx:-1,dy:-1},
     ];
-    base.forEach(v => {
-      const p = projectDelta(v.dx, v.dy, state.facing);
-      const cx = state.heroWindow.x + p.dx;
-      const cy = state.heroWindow.y + p.dy;
+    offs.forEach(v => {
+      const cx = state.heroWindow.x + v.dx;
+      const cy = state.heroWindow.y + v.dy;
       const cell = getCell(cx, cy);
-      if (cell && cell.bbox){
-        g.appendChild(drawRectEl(cell.bbox, "dw-hl-move"));
+      if (cell){
+        const rect = drawRectFromCell(cell, "dw-hl-move", { cellx: String(cx), celly: String(cy) });
+        g.appendChild(rect);
       }
     });
   }
+
+  // ---- Enemies ----
   function renderEnemies(){
     const g = ensureLayer("dw-markers-enemies");
     state.enemies.forEach(e => {
@@ -168,50 +208,100 @@
         const cy = clamp(w.y, state.grid.minY, state.grid.maxY);
         targetCell = getCell(cx, cy);
       }
-      if (targetCell && targetCell.bbox){
-        const bb = targetCell.bbox;
-        const cx = bb.x + bb.width/2;
-        const cy = bb.y + bb.height/2;
-        g.appendChild(drawCircleEl(cx, cy, Math.min(bb.width, bb.height)*0.18, "dw-enemy"));
+      if (targetCell){
+        const cx = targetCell.rx + targetCell.rw/2;
+        const cy = targetCell.ry + targetCell.rh/2;
+        const r = Math.min(targetCell.rw, targetCell.rh) * 0.18;
+        g.appendChild(drawCircleEl(cx, cy, r, "dw-enemy"));
       }
     });
   }
+
   function repaint(){
     if (!state.svg) return;
     renderMoveHighlights();
     renderEnemies();
   }
 
-  // ---- Buttons ----
-  function mapBtnToKind(id){
-    const low = id.toLowerCase();
-    if (low.includes("turn_right")) return "__turn_right";
-    if (low.includes("turn_left")) return "__turn_left";
-    if (low.includes("attack")) return "attack";
-    if (low.includes("defence") || low.includes("defense")) return "defense";
-    if (low.includes("ranger") && low.includes("precise")) return "ranger_precise";
-    if (low.includes("throw")) return "throw";
-    if (low.includes("potion")) return "potion";
-    if (low.includes("bandage")) return "bandage";
-    if (low.includes("rollback")) return "rollback";
-    if (low.includes("end_turn") || low.endsWith("_end")) return "end_turn";
-    return null;
+  // ---- Movement ----
+  function isAllowedMove(dxWin, dyWin){
+    const ax = Math.abs(dxWin), ay = Math.abs(dyWin);
+    if ((ax===0 && (ay===1 || ay===2)) || (ay===0 && (ax===1 || ax===2))) return true;
+    if (ax===1 && ay===1) return true;
+    return false;
   }
-  function quickPress(el){
-    el.classList.add("pressed");
-    setTimeout(()=> el.classList.remove("pressed"), 110);
+  function animatePan(dxWin, dyWin){
+    state.pan.offX = dxWin;
+    state.pan.offY = dyWin;
+    const start = performance.now();
+    const dur = 160;
+    cancelAnimationFrame(state.pan.animId);
+    const step = (t)=>{
+      const k = Math.min(1, (t-start)/dur);
+      const ease = k<0.5 ? 2*k*k : -1+(4-2*k)*k;
+      state.pan.offX = (1-ease)*dxWin;
+      state.pan.offY = (1-ease)*dyWin;
+      ensurePanLayer();
+      if (k<1) state.pan.animId = requestAnimationFrame(step);
+      else { state.pan.offX=0; state.pan.offY=0; ensurePanLayer(); repaint(); }
+    };
+    state.pan.animId = requestAnimationFrame(step);
   }
-  function bindButtons(){
-    state.svg.addEventListener("click", (e) => {
-      const t = e.target.closest("[id^='btn_']");
-      if (!t) return;
-      quickPress(t);
-      const kind = mapBtnToKind(t.id);
-      if (!kind) return;
-      if (kind === "__turn_left") { state.facing = ((state.facing + 3) % 4); repaint(); return; }
-      if (kind === "__turn_right"){ state.facing = ((state.facing + 1) % 4); repaint(); return; }
-      window.dispatchEvent(new CustomEvent("dw:combat:action", { detail: { kind } }));
-    });
+  function performMoveToWindowCell(wx, wy){
+    const dxWin = wx - state.heroWindow.x;
+    const dyWin = wy - state.heroWindow.y;
+    if (!isAllowedMove(dxWin, dyWin)) return false;
+    const d = unprojectDelta(dxWin, dyWin, state.facing);
+    const newX = clamp(state.heroWorld.x + d.dx, 0, state.worldSize.w-1);
+    const newY = clamp(state.heroWorld.y + d.dy, 0, state.worldSize.h-1);
+    if (window.DWCombatLogic && typeof window.DWCombatLogic.setHeroPos === "function"){
+      window.DWCombatLogic.setHeroPos(newX, newY);
+    } else {
+      state.heroWorld.x = newX; state.heroWorld.y = newY;
+    }
+    animatePan(dxWin, dyWin);
+    return true;
+  }
+
+  // ---- Click handling ----
+  function onClick(e){
+    // 1) Click on button
+    const btn = e.target.closest("[id^='btn_']");
+    if (btn){
+      btn.classList.add("pressed"); setTimeout(()=> btn.classList.remove("pressed"), 110);
+      const id = btn.id.toLowerCase();
+      if (id.includes("turn_left")) { state.facing = (state.facing + 3) % 4; repaint(); return; }
+      if (id.includes("turn_right")){ state.facing = (state.facing + 1) % 4; repaint(); return; }
+      // Pass semantic actions to logic
+      let kind = null;
+      if (id.includes("attack")) kind="attack";
+      else if (id.includes("defence")||id.includes("defense")) kind="defense";
+      else if (id.includes("ranger") && id.includes("precise")) kind="ranger_precise";
+      else if (id.includes("throw")) kind="throw";
+      else if (id.includes("potion")) kind="potion";
+      else if (id.includes("bandage")) kind="bandage";
+      else if (id.includes("rollback")) kind="rollback";
+      else if (id.includes("end_turn") || id.endsWith("_end")) kind="end_turn";
+      if (kind) window.dispatchEvent(new CustomEvent("dw:combat:action", { detail: { kind } }));
+      return;
+    }
+    // 2) Click on highlight (preferred)
+    const hl = e.target.closest(".dw-hl-move");
+    if (hl && hl.dataset && hl.dataset.cellx){
+      const wx = parseInt(hl.dataset.cellx,10);
+      const wy = parseInt(hl.dataset.celly,10);
+      if (performMoveToWindowCell(wx, wy)) return;
+    }
+    // 3) Click on base cell
+    const rect = e.target.closest("#board #cam #cells rect[id^='cell_']");
+    if (rect){
+      const m = /^cell_(-?\d+)_(-?\d+)$/.exec(rect.id);
+      if (m){
+        const wx = parseInt(m[1],10);
+        const wy = parseInt(m[2],10);
+        performMoveToWindowCell(wx, wy);
+      }
+    }
   }
 
   // ---- Sync from logic ----
@@ -228,7 +318,7 @@
     repaint();
   }
 
-  // ---- Position overlay to center column (fixed rect) ----
+  // ---- Anchor to center ----
   function findCenterNode(){
     let node = document.querySelector("#center");
     if (node) return node;
@@ -247,60 +337,54 @@
 
   // ---- Init ----
   async function init(){
-    try{
-      injectCSS();
-      state.anchor = findCenterNode();
+    injectCSS();
+    state.anchor = findCenterNode();
+    const root = document.createElement("div");
+    root.id = "dw-combat-root";
+    document.body.appendChild(root);
+    state.root = root;
+    positionToAnchor();
+    window.addEventListener("resize", positionToAnchor, { passive:true });
+    window.addEventListener("scroll", positionToAnchor, { passive:true });
 
-      // Create fixed root
-      const root = document.createElement("div");
-      root.id = "dw-combat-root";
-      document.body.appendChild(root);
-      state.root = root;
-      positionToAnchor();
-      window.addEventListener("resize", positionToAnchor, { passive:true });
-      window.addEventListener("scroll", positionToAnchor, { passive:true });
-
-      // Load or adopt svg
-      let svg = document.querySelector("#dw-combat-svg");
-      if (!svg) {
-        try {
-          const resp = await fetch("combat-overlay.svg", { cache:"no-store" });
-          if (resp.ok){
-            const text = await resp.text();
-            const wrap = document.createElement("div"); wrap.innerHTML = text.trim();
-            svg = wrap.querySelector("svg");
-            if (svg) { svg.id = "dw-combat-svg"; }
-          }
-        } catch(e){ /* ignore */ }
-      }
-      if (!svg) { console.error("dw-combat-svg not found"); return; }
-      root.appendChild(svg);
-      state.svg = svg;
-
-      // Migrate IDs (legacy fixes only)
-      if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
-        window.DWSVGMigrate.run(state.svg);
-      }
-
-      const ok = collectCells();
-      if (!ok) { console.warn("No cells collected — check rect ids like cell_-1_2 inside #board #cam #cells."); }
-
-      bindButtons();
-      window.addEventListener("dw:combat:state", onState);
-
-      repaint();
-
-      window[BOOT_NS] = {
-        setFacing: (f)=>{ state.facing=((f|0)%4+4)%4; repaint(); },
-        getFacing: ()=> state.facing,
-        setHeroWorld: (x,y)=>{ state.heroWorld.x=x|0; state.heroWorld.y=y|0; repaint(); },
-        setEnemies: (arr)=>{ state.enemies = Array.isArray(arr)? arr.map(e=>({id:e.id,pos:{x:e.pos.x|0,y:e.pos.y|0},alive:e.alive!==false})) : []; repaint(); },
-      };
-
-      log("Overlay fixed-aligned to center and ready");
-    }catch(err){
-      console.error("Combat overlay init failed:", err);
+    let svg = document.querySelector("#dw-combat-svg");
+    if (!svg) {
+      try {
+        const resp = await fetch("combat-overlay.svg", { cache:"no-store" });
+        if (resp.ok){
+          const text = await resp.text();
+          const wrap = document.createElement("div"); wrap.innerHTML = text.trim();
+          svg = wrap.querySelector("svg");
+          if (svg) { svg.id = "dw-combat-svg"; }
+        }
+      } catch(e){ /* ignore */ }
     }
+    if (!svg) { console.error("dw-combat-svg not found"); return; }
+    root.appendChild(svg);
+    state.svg = svg;
+
+    if (window.DWSVGMigrate && typeof window.DWSVGMigrate.run === "function") {
+      window.DWSVGMigrate.run(state.svg);
+    }
+
+    const ok = collectCells();
+    if (!ok) { console.warn("No cells collected — expect rect ids like cell_-1_2 inside #board #cam #cells."); }
+
+    // Events
+    state.svg.addEventListener("click", onClick);
+    window.addEventListener("dw:combat:state", onState);
+
+    repaint();
+
+    window[BOOT_NS] = {
+      setFacing: (f)=>{ state.facing=((f|0)%4+4)%4; repaint(); },
+      getFacing: ()=> state.facing,
+      setHeroWorld: (x,y)=>{ state.heroWorld.x=x|0; state.heroWorld.y=y|0; repaint(); },
+      setEnemies: (arr)=>{ state.enemies = Array.isArray(arr)? arr.map(e=>({id:e.id,pos:{x:e.pos.x|0,y:e.pos.y|0},alive:e.alive!==false})) : []; repaint(); },
+      getGrid: ()=> ({...state.grid}),
+    };
+
+    log("Overlay v3.7 ready");
   }
 
   if (document.readyState === "complete" || document.readyState === "interactive") init();
