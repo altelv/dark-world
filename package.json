@@ -1,0 +1,7 @@
+{
+  "name": "dark-world",
+  "private": true,
+  "scripts": {
+    "build": "echo \"No build step\""
+  }
+}
