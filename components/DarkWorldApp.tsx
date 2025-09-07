@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState, useEffect, createContext, useContext } from "react";
+import BattleBlock from "./BattleBlock";
 
 /**
  * ТЕМНЫЙ МИР — КАРКАС И БАЗОВЫЙ БОЙБЛОК (v0.1)
