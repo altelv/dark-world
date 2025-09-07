@@ -1,7 +1,13 @@
 // components/BattleBlock.tsx
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import useGame from "./DarkWorldApp"; "./DarkWorldApp"; // assumes useGame context is exported here
+import { useGame } from "./DarkWorldApp"; "./DarkWorldApp"; // assumes useGame context is exported here
+
+export function useGame() {
+  const ctx = React.useContext<any>(GameContext);
+  if (!ctx) throw new Error("useGame must be used within GameContext.Provider");
+  return ctx;
+}
 
 type GPos = { gx:number; gy:number };
 type Archetype = "Танк"|"Лучник"|"Ловкач"|"Маг"|"Берсерк";
@@ -197,7 +203,7 @@ export default function BattleBlock(){
     else   { setBattle(b=>({...b, log:[...b.log, `D=${roll} + Фокус(${modFocus}) < 12 → без бонуса`]})); }
   }, [phase, battle.active]);
 
-  function endHeroTurn(){
+   endHeroTurn(){
     if (!battle.active) return;
     setBattle(b=>({...b, log:[...b.log, "Ход героя завершён."]}));
     setPhase("enemies");
