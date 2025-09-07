@@ -1,7 +1,7 @@
 // components/BattleBlock.tsx
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useGame } from "./DarkWorldApp"; // assumes useGame context is exported here
+import useGame from "./DarkWorldApp"; "./DarkWorldApp"; // assumes useGame context is exported here
 
 type GPos = { gx:number; gy:number };
 type Archetype = "Танк"|"Лучник"|"Ловкач"|"Маг"|"Берсерк";
