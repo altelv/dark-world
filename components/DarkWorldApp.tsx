@@ -306,7 +306,6 @@ function BattleBlock(){
     } else {
       if (success) {
         setAa(a => a + 1);
-        setBattle(b => ({...b, log:[...b,].log}));
         setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} ≥ ${targetDC}: получено доп. ОА.`]}));
       } else {
         setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} < ${targetDC}: без бонуса.`]}));
@@ -330,10 +329,15 @@ function BattleBlock(){
         const R = ARCH[e.kind].range;
         const S = ARCH[e.kind].speed;
         if (dist(e.pos, heroPos) > R){
-          const dx = Math.sign(heroPos.x - e.pos.x);
-          const dy = Math.sign(heroPos.y - e.pos.y);
-          e.pos = { x: clamp(e.pos.x + (dx>0?1:dx<0?-1:0)*Math.min(S,abs(dx:=Math.abs(heroPos.x - e.pos.x))?1:1), y: clamp(e.pos.y + (dy>0?1:dy<0?-1:0)*Math.min(S,abs(dy:=Math.abs(heroPos.y - e.pos.y))?1:1), 0, H-1) };
-        }
+      const dx = Math.sign(heroPos.x - e.pos.x);
+      const dy = Math.sign(heroPos.y - e.pos.y);
+      const stepX = Math.min(S, Math.abs(heroPos.x - e.pos.x));
+      const stepY = Math.min(S, Math.abs(heroPos.y - e.pos.y));
+      e.pos = {
+        x: clamp(e.pos.x + dx * stepX, 0, W-1),
+        y: clamp(e.pos.y + dy * stepY, 0, H-1)
+      };
+    }
         if (dist(e.pos, heroPos) <= R){
           const roll = d20();
           const heroDef = 12 + (hero.skills?.["оборона"] ?? hero.skills?.["Оборона"] ?? 0) + (hero.luck ?? 0) - (hero.fatigue ?? 0);
