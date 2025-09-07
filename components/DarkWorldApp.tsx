@@ -185,60 +185,258 @@ function StoryBlock(){
 }
 
 /*************** БойБлок — оверлей ***************/
+function d20(){ return 1 + Math.floor(Math.random()*20); }
+
+type Archetype = "Танк" | "Лучник" | "Ловкач" | "Маг" | "Берсерк";
+type Enemy = {
+  id: string;
+  name: string;
+  kind: Archetype;
+  hp: number;
+  hpMax: number;
+  atk: number; // бонус к атаке (для их хода)
+  def: number; // защитный DC (базовый 12 + бонусы)
+  pos: {x:number;y:number}; // клетка на поле
+  alive: boolean;
+};
+
+const ARCH: Record<Archetype,{hp:number; atk:number; def:number; speed:number; range:number}> = {
+  "Танк":   { hp: 6, atk: 2, def: 13, speed: 1, range: 1 },
+  "Лучник": { hp: 2, atk: 6, def: 12, speed: 1, range: 4 },
+  "Ловкач": { hp: 2, atk: 2, def: 15, speed: 2, range: 1 },
+  "Маг":    { hp: 2, atk: 6, def: 12, speed: 1, range: 4 },
+  "Берсерк":{ hp: 3, atk: 6, def: 12, speed: 1, range: 1 },
+};
+
+function dist(a:{x:number;y:number}, b:{x:number;y:number}){
+  return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y)); // Chebyshev (диагональ=1)
+}
+
+function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
+
 function BattleBlock(){
-  const { battle, setBattle, bus } = useGame();
+  const { hero, setHero, battle, setBattle, bus } = useGame();
+  const W = 7, H = 5;
+
+  // Состояния боя
   const [ap, setAp] = useState(1); // ОД
   const [aa, setAa] = useState(1); // ОА
+  const [heroPos, setHeroPos] = useState({x:3, y:3});
+  const [enemies, setEnemies] = useState<Enemy[]>([]);
+  const [selectedId, setSelectedId] = useState<string|null>(null);
+  const [phase, setPhase] = useState<"hero"|"enemies">("hero"); // фиксированный порядок
+  const [round, setRound] = useState(1);
+
+  // Инициализация боя
   useEffect(()=>{
     if (!battle.active) return;
-    setAp(1); setAa(1);
-  }, [battle.active, battle.turn]);
+    // базовый пак врагов — можно потом генерить ДМом
+    const pack: Enemy[] = [
+      { id:"e1", name:"Охотник-танк", kind:"Танк",    hp:ARCH["Танк"].hp,    hpMax:ARCH["Танк"].hp,    atk:ARCH["Танк"].atk,    def:ARCH["Танк"].def,    pos:{x:1,y:1}, alive:true },
+      { id:"e2", name:"Лучник в маске", kind:"Лучник", hp:ARCH["Лучник"].hp, hpMax:ARCH["Лучник"].hp, atk:ARCH["Лучник"].atk, def:ARCH["Лучник"].def, pos:{x:5,y:1}, alive:true },
+      { id:"e3", name:"Ловкач-тень",   kind:"Ловкач", hp:ARCH["Ловкач"].hp, hpMax:ARCH["Ловкач"].hp, atk:ARCH["Ловкач"].atk, def:ARCH["Ловкач"].def, pos:{x:5,y:3}, alive:true },
+    ];
+    setEnemies(pack);
+    setHeroPos({x:3,y:3});
+    setPhase("hero");
+    setRound(1);
+    startHeroTurn(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [battle.active]);
+
+  // Начало хода героя: сброс очков и проверка Фокуса/Стресса
+  function startHeroTurn(first=false){
+    setAp(1);
+    setAa(1);
+    // Проверка в начале хода по правилам
+    const hasStress = hero.effects?.some(e => /стресс/i.test(e));
+    const roll = d20();
+    const mod = hero.skills?.["фокус"] ?? hero.skills?.["Фокус"] ?? 0;
+    const targetDC = 12;
+    const success = roll + mod >= targetDC;
+    if (hasStress) {
+      if (success){
+        setHero(h => ({...h, effects: (h.effects||[]).filter(e => !/стресс/i.test(e))}));
+        setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} ≥ ${targetDC}: Стресс снят.`]}));
+        bus.say("Вы берёте себя в руки. В голове проясняется.");
+      } else {
+        setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} < ${targetDC}: стресс остаётся.`]}));
+      }
+    } else {
+      if (success) {
+        setAa(a => a + 1); // дополнительная атака
+        setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} ≥ ${targetDC}: получено доп. ОА.`]}));
+      } else {
+        setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} < ${targetDC}: без бонуса.`]}));
+      }
+    }
+    if(!first) bus.say("Ваш ход.");
+  }
+
+  function endHeroTurn(){
+    setPhase("enemies");
+    setBattle(b => ({...b, log:[...b.log, "Ход Героя завершён."]}));
+    // затем ход врагов
+    setTimeout(enemiesTurn, 200);
+  }
+
+  function enemiesTurn(){
+    setBattle(b => ({...b, log:[...b.log, "Ход Врагов."]}));
+    setEnemies(prev => {
+      let arr = [...prev];
+      arr.forEach((e,i)=>{
+        if (!e.alive) return;
+        const R = ARCH[e.kind].range;
+        const S = ARCH[e.kind].speed;
+        // если далеко — подойти
+        if (dist(e.pos, heroPos) > R){
+          const dx = Math.sign(heroPos.x - e.pos.x);
+          const dy = Math.sign(heroPos.y - e.pos.y);
+          e.pos = { x: clamp(e.pos.x + clamp(dx, -S, S), 0, W-1), y: clamp(e.pos.y + clamp(dy, -S, S), 0, H-1) };
+          // лог перемещения
+        }
+        // если в радиусе — атаковать
+        if (dist(e.pos, heroPos) <= R){
+          // бросок на попадание: d20 + e.atk против Обороны героя (12 + навык оборона + удача - усталость)
+          const roll = d20();
+          const heroDef = 12 + (hero.skills?.["оборона"] ?? hero.skills?.["Оборона"] ?? 0) + (hero.luck ?? 0) - (hero.fatigue ?? 0);
+          const total = roll + e.atk;
+          const hit = total >= heroDef;
+          setBattle(b => ({...b, log:[...b.log, `${e.name} атакует (${roll}+${e.atk} против ${heroDef}): ${hit?"ПОПАЛ":"мимо"}`]}));
+          if (hit){
+            // урон 1 хит (по твоей схеме — снятие хита при успехе)
+            setHero(h => ({...h, hp: Math.max(0, h.hp - 1)}));
+          }
+        }
+      });
+      return arr;
+    });
+    // завершение раунда
+    setTimeout(()=>{
+      setPhase("hero");
+      setRound(r => r + 1);
+      setBattle(b => ({...b, log:[...b.log, "Ход Врагов завершён."]}));
+      startHeroTurn();
+    }, 200);
+  }
+
+  function move(dir:"up"|"down"|"left"|"right"){
+    if (phase!=="hero" || ap<=0) return;
+    const d = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} }[dir];
+    const nx = clamp(heroPos.x + d.x, 0, W-1);
+    const ny = clamp(heroPos.y + d.y, 0, H-1);
+    if (nx===heroPos.x && ny===heroPos.y) return;
+    setHeroPos({x:nx, y:ny});
+    setAp(ap-1);
+    setBattle(b => ({...b, log:[...b.log, `Герой двигается (${dir}).`]}));
+  }
+
+  function pickTarget(id:string){ setSelectedId(id); }
+
+  function attack(kind:"Кинжал"|"Морок"){
+    if (phase!=="hero" || aa<=0) return;
+    const target = enemies.find(e => e.id===selectedId && e.alive);
+    if (!target) { setBattle(b=>({...b, log:[...b.log, "Нет выбранной цели."]})); return; }
+    // дистанции: Кинжал — 1; Морок — 4
+    const rng = kind==="Кинжал"? 1 : 4;
+    if (dist(heroPos, target.pos) > rng){
+      setBattle(b=>({...b, log:[...b.log, `${kind}: цель вне досягаемости.`]}));
+      return;
+    }
+    const roll = d20();
+    const skillKey = kind==="Кинжал" ? "атака" : "фокус";
+    const modSkill = hero.skills?.[skillKey] ?? hero.skills?.[skillKey[0].toUpperCase()+skillKey.slice(1)] ?? 0;
+    const total = roll + modSkill + (hero.luck ?? 0) - (hero.fatigue ?? 0);
+    const hit = total >= target.def;
+    setBattle(b => ({...b, log:[...b.log, `${kind} по ${target.name} (${roll}+${modSkill}+удача${hero.luck??0}-усталость${hero.fatigue??0} против ${target.def}): ${hit?"УДАР":"промах"}`]}));
+    if (hit){
+      setEnemies(arr => arr.map(e => e.id===target.id ? ({...e, hp: Math.max(0, e.hp-1), alive: e.hp-1>0}) : e));
+      bus.say(kind==="Кинжал" ? "Кровь тёмным росчерком на камнях." : "Мир изгибается, и враг теряет опору.");
+    }
+    setAa(aa-1);
+  }
+
+  function endBattle(){
+    setBattle({ active:false, log:[], turn:1 });
+  }
+
   if (!battle.active) return null;
 
-  const endTurn = ()=> setBattle(b => ({ ...b, turn: b.turn+1, log: [...b.log, `Ход ${b.turn} завершён.`]}));
-  const move = (dir:string)=>{ if (ap<=0) return; setAp(ap-1); setBattle(b=>({...b, log:[...b.log, `Герой двигается: ${dir}.`] })); };
-  const attack = (kind:string)=>{ if (aa<=0) return; setAa(aa-1); const hit = Math.random() < 0.6;
-    setBattle(b=>({...b, log:[...b.log, `${kind}: ${hit? "УДАР УСПЕШЕН":"ПРОМАХ"}`]})); bus.say(hit? "Клинок находит щель в броне.":"Противник уходит в тень."); };
-  const closeBattle = ()=> setBattle({ active:false, log:[], turn:1 });
+  // Проверка конца боя/смерти героя
+  useEffect(()=>{
+    if (!battle.active) return;
+    if (enemies.length>0 && enemies.every(e => !e.alive)){
+      setBattle(b => ({...b, log:[...b.log, "Все враги повержены. Победа!"]}));
+    }
+    if (hero.hp <= 0){
+      setBattle(b => ({...b, log:[...b.log, "Вы пали. Тьма поглощает…"]}));
+    }
+  }, [enemies, hero.hp, battle.active, setBattle]);
 
+  // UI
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-      <div className="relative z-10 grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
-        <Panel title="Текст БойРеж" className="md:col-span-3 max-h-40 overflow-auto">
-          <p className="text-white/80">Каменные плиты скользкие от дождя. Враги окружили вас.</p>
+      <div className="relative z-10 grid w-full max-w-6xl grid-cols-1 gap-4 md:grid-cols-3">
+        <Panel title={`Бой • Раунд ${round}`} className="md:col-span-3">
+          <div className="text-xs text-white/70">Порядок: Герой → Враги. Сейчас ход: <b>{phase==="hero"?"Героя":"Врагов"}</b>. ОД: <b>{ap}</b> • ОА: <b>{aa}</b></div>
         </Panel>
+
+        {/* Поле боя */}
         <Panel title="Поле боя" className="md:col-span-2">
           <div className="grid grid-cols-7 gap-2">
-            {Array.from({length:35}).map((_,i)=>(
-              <div key={i} className="aspect-square rounded-xl border border-white/10 text-[10px] flex items-center justify-center text-white/50 select-none">
-                {i===24? "ГЕРОЙ": ""}
-              </div>
-            ))}
+            {Array.from({length:W*H}).map((_,i)=>{
+              const x = i % W, y = Math.floor(i/W);
+              const hereEnemies = enemies.filter(e => e.alive && e.pos.x===x && e.pos.y===y);
+              const isHero = heroPos.x===x && heroPos.y===y;
+              return (
+                <div key={i} className={`aspect-square rounded-xl border border-white/10 text-[10px] flex items-center justify-center select-none ${isHero?"bg-white/10":""}`}>
+                  {isHero ? "ГЕРОЙ" : hereEnemies.length>0 ? "ВРАГ" : ""}
+                </div>
+              );
+            })}
           </div>
+
           <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-            <button onClick={()=>move("вверх")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬆️ Движение</button>
-            <button onClick={()=>move("влево")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬅️</button>
-            <button onClick={()=>move("вправо")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">➡️</button>
+            <button onClick={()=>move("up")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬆️ Движение</button>
+            <button onClick={()=>move("left")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬅️</button>
+            <button onClick={()=>move("right")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">➡️</button>
             <div />
-            <button onClick={()=>move("вниз")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬇️</button>
+            <button onClick={()=>move("down")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬇️</button>
             <div />
           </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-white/70">
-            <div>ОД: <b>{ap}</b> • ОА: <b>{aa}</b> • Раунд: <b>{Math.ceil(battle.turn/2)}</b></div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/70">
+            <div>ОД: <b>{ap}</b> • ОА: <b>{aa}</b> • Раунд: <b>{round}</b></div>
             <div className="flex gap-2">
-              <button onClick={()=>attack("Атака кинжалом")} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20">Кинжал</button>
-              <button onClick={()=>attack("Заклинание морока")} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20">Морок</button>
+              <button onClick={()=>attack("Кинжал")} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20">Кинжал</button>
+              <button onClick={()=>attack("Морок")} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20">Морок</button>
+              <button onClick={endHeroTurn} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20" disabled={phase!=="hero"}>Конец хода</button>
             </div>
           </div>
         </Panel>
-        <Panel title="Лог боя">
-          <div className="max-h-40 overflow-auto pr-1 text-sm space-y-1">
-            {battle.log.map((l,i)=>(<div key={i} className="text-white/80">{l}</div>))}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button onClick={endTurn} className="rounded-xl px-4 py-2 bg-white/10 hover:bg-white/20">Конец хода</button>
-            <button onClick={closeBattle} className="rounded-xl px-4 py-2 bg-white/10 hover:bg-white/20">Завершить бой</button>
+
+        {/* Панель целей и лог */}
+        <Panel title="Цели и лог">
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {enemies.map(e => (
+                <div key={e.id} className={`rounded-xl p-2 text-sm ${!e.alive?"opacity-40":""} ${selectedId===e.id?"bg-white/10":"bg-white/5"}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{e.name} <span className="text-white/50">({e.kind})</span></div>
+                    <button onClick={()=>pickTarget(e.id)} className="rounded-xl px-2 py-1 bg-white/10 hover:bg-white/20 text-xs">Цель</button>
+                  </div>
+                  <div className="text-xs text-white/70 mt-1">HP {e.hp}/{e.hpMax} • DEF {e.def} • RNG {ARCH[e.kind].range}</div>
+                </div>
+              ))}
+            </div>
+            <div className="max-h-44 overflow-auto pr-1 text-sm space-y-1 border-t border-white/10 pt-2">
+              {battle.log.map((l,i)=>(<div key={i} className="text-white/80">{l}</div>))}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={()=>setBattle(b=>({...b, active:false}))} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20">Завершить бой</button>
+              <button onClick={()=>{ setBattle(b=>({...b, log:[]})); }} className="rounded-xl px-3 py-1 bg-white/10 hover:bg-white/20">Очистить лог</button>
+            </div>
           </div>
         </Panel>
       </div>
@@ -246,7 +444,8 @@ function BattleBlock(){
   );
 }
 
-/*************** КостиБлок ***************/
+
+/******************** КостиБлок ***************/
 function DiceBlock(){
   const { dice, setDice } = useGame();
   if (!dice.show) return null;
