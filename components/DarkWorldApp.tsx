@@ -462,17 +462,29 @@ function DiceBlock(){
 function Columns(){
   const [tab, setTab] = useState(1);
   return (
-    <div className="mx-auto h-screen max-w-7xl p-3 md:p-6 text-white">
-      <div className="mb-3 flex gap-2 md:hidden">
+    <div className="h-screen w-screen text-white">
+      {/* Мобайл: табы */}
+      <div className="md:hidden p-3 flex gap-2">
         <button onClick={()=>setTab(0)} className={`rounded-xl px-3 py-2 text-sm ${tab===0?"bg-white/20":"bg-white/10"}`}>Герой</button>
         <button onClick={()=>setTab(1)} className={`rounded-xl px-3 py-2 text-sm ${tab===1?"bg-white/20":"bg-white/10"}`}>Рассказ</button>
         <button onClick={()=>setTab(2)} className={`rounded-xl px-3 py-2 text-sm ${tab===2?"bg-white/20":"bg-white/10"}`}>Инвентарь</button>
       </div>
-      <div className="grid h-[calc(100vh-72px)] grid-cols-1 gap-4 md:h-[calc(100vh-48px)] md:grid-cols-3">
-        <div className={`overflow-auto ${tab!==0?"hidden md:block":""}`}><PersBlock/></div>
-        <div className={`overflow-auto ${tab!==1?"hidden md:block":""}`}><StoryBlock/></div>
-        <div className={`overflow-auto ${tab!==2?"hidden md:block":""}`}><InventoryBlock/></div>
+      {/* Десктоп и мобайл: равные по ширине колонки, высота ровно viewport */}
+      <div className="grid h-full grid-cols-1 md:grid-cols-3">
+        {/* ЛЕВАЯ */}
+        <div className={`${tab!==0?"hidden md:block":""} relative overflow-hidden`}>
+          <div className="h-full overflow-auto p-3 md:p-6"><PersBlock/></div>
+        </div>
+        {/* ЦЕНТР */}
+        <div className={`${tab!==1?"hidden md:block":""} relative overflow-hidden`}>
+          <div className="h-full overflow-auto p-3 md:p-6"><StoryBlock/></div>
+        </div>
+        {/* ПРАВАЯ */}
+        <div className={`${tab!==2?"hidden md:block":""} relative overflow-hidden`}>
+          <div className="h-full overflow-auto p-3 md:p-6"><InventoryBlock/></div>
+        </div>
       </div>
+      {/* Оверлеи */}
       <BattleBlock/>
       <DiceBlock/>
     </div>
@@ -481,14 +493,8 @@ function Columns(){
 
 export default function DarkWorldApp(){
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-black via-neutral-950 to-black">
+    <div className="h-screen w-screen bg-gradient-to-b from-black via-neutral-950 to-black">
       <GameProvider>
-        <header className="mx-auto max-w-7xl p-4 text-white/80">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold tracking-wide">ТЁМНЫЙ МИР — каркас v0.1</h1>
-            <div className="text-xs opacity-70">ПерсБлок • ИстБлок • Шкаф • БойБлок • КостиБлок</div>
-          </div>
-        </header>
         <Columns/>
       </GameProvider>
     </div>
