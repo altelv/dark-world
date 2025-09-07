@@ -1,1 +1,563 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 160 160">
+  <!-- Generator: Adobe Illustrator 29.4.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 152)  -->
+  <defs>
+    <style>
+      .st0 {
+        font-size: .92px;
+      }
 
+      .st0, .st1, .st2, .st3, .st4, .st5, .st6 {
+        isolation: isolate;
+      }
+
+      .st0, .st2, .st3 {
+        font-family: CourierNewPSMT, 'Courier New';
+      }
+
+      .st0, .st3 {
+        fill: #eee;
+      }
+
+      .st1 {
+        fill: #fff;
+        font-family: MyriadPro-Regular, 'Myriad Pro';
+        font-size: 1.57px;
+      }
+
+      .st2 {
+        fill: #777;
+        font-size: 1.07px;
+      }
+
+      .st7 {
+        stroke: #d2d2d1;
+      }
+
+      .st7, .st8, .st9, .st10, .st11, .st12, .st13, .st14, .st15 {
+        stroke-miterlimit: 10;
+      }
+
+      .st7, .st8, .st10, .st11, .st12, .st14, .st15 {
+        stroke-width: .08px;
+      }
+
+      .st3 {
+        font-size: 1.18px;
+      }
+
+      .st8 {
+        stroke: #fc6;
+        stroke-dasharray: .46 .31;
+      }
+
+      .st8, .st9, .st10, .st14 {
+        fill: none;
+      }
+
+      .st9 {
+        stroke: #e6e6e6;
+        stroke-width: .38px;
+      }
+
+      .st10 {
+        stroke: #7aa3ff;
+        stroke-dasharray: .46 .46;
+      }
+
+      .st5 {
+        font-size: 5.19px;
+      }
+
+      .st5, .st6 {
+        font-family: ArialMT, Arial;
+      }
+
+      .st5, .st16 {
+        fill: #e6e6e6;
+      }
+
+      .st11 {
+        stroke: #000;
+      }
+
+      .st17 {
+        fill: #c1272d;
+      }
+
+      .st6 {
+        fill: #bbb;
+        font-size: 2.61px;
+      }
+
+      .st18, .st12 {
+        fill: #333;
+      }
+
+      .st12 {
+        stroke: #777;
+        stroke-dasharray: .31 .31;
+      }
+
+      .st19 {
+        fill: #0b0b0b;
+      }
+
+      .st13 {
+        fill: #111;
+        stroke: #555;
+        stroke-width: .15px;
+      }
+
+      .st14 {
+        stroke: #aaa;
+      }
+
+      .st20 {
+        fill: #22b573;
+      }
+
+      .st15 {
+        fill: #1a1a1a;
+        stroke: #666;
+      }
+
+      .st21 {
+        fill: #f7931e;
+      }
+    </style>
+  </defs>
+  <g id="_якоря" data-name="якоря">
+    <g id="anchors">
+      <g id="hero">
+        <circle id="hero-anchor" class="st10" cx="80" cy="113.12" r="2.15"/>
+      </g>
+      <g id="spawn-e1">
+        <rect class="st8" x="41.33" y="74.45" width="3.68" height="3.68"/>
+      </g>
+      <g id="spawn-e2">
+        <rect class="st8" x="114.99" y="74.75" width="3.68" height="3.68"/>
+      </g>
+      <g id="spawn-e3">
+        <rect class="st8" x="78.16" y="74.45" width="3.68" height="3.68"/>
+      </g>
+      <g id="spawn-e4">
+        <rect class="st8" x="102.71" y="74.75" width="3.68" height="3.68"/>
+      </g>
+      <g id="spawn-e5">
+        <rect class="st8" x="53.91" y="74.75" width="3.68" height="3.68"/>
+      </g>
+      <g id="spawn-e6">
+        <rect class="st8" x="78.16" y="86.72" width="3.68" height="3.68"/>
+      </g>
+    </g>
+  </g>
+  <g id="_Слой_1" data-name="Слой_1">
+    <g id="art">
+      <g id="front-back">
+        <rect id="front-cell" class="st11" x="73.86" y="94.71" width="12.28" height="12.28"/>
+        <rect id="back-cell" class="st11" x="73.86" y="119.26" width="12.28" height="12.28"/>
+      </g>
+      <g id="ranges">
+        <rect id="range-mid-r0-c0" class="st7" x="37.03" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r0-c1" class="st7" x="49.31" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r0-c2" class="st7" x="61.58" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r0-c3" class="st7" x="73.86" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r0-c4" class="st7" x="86.14" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r0-c5" class="st7" x="98.42" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r0-c6" class="st7" x="110.69" y="70.15" width="12.28" height="12.28"/>
+        <rect id="range-mid-r1-c0" class="st7" x="37.03" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-mid-r1-c1" class="st7" x="49.31" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-near-r1-c2" class="st7" x="61.58" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-near-r1-c3" class="st7" x="73.86" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-near-r1-c4" class="st7" x="86.14" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-mid-r1-c5" class="st7" x="98.42" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-mid-r1-c6" class="st7" x="110.69" y="82.43" width="12.28" height="12.28"/>
+        <rect id="range-mid-r2-c0" class="st7" x="37.03" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-mid-r2-c1" class="st7" x="49.31" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-near-r2-c2" class="st7" x="61.58" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-self-r2-c3" class="st7" x="73.86" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-near-r2-c4" class="st7" x="86.14" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-mid-r2-c5" class="st7" x="98.42" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-mid-r2-c6" class="st7" x="110.69" y="94.71" width="12.28" height="12.28"/>
+        <rect id="range-mid-r3-c1" class="st7" x="49.31" y="106.98" width="12.28" height="12.28"/>
+        <rect id="range-near-r3-c2" class="st7" x="61.58" y="106.98" width="12.28" height="12.28"/>
+        <rect id="range-near-r3-c3" class="st7" x="73.86" y="106.98" width="12.28" height="12.28"/>
+        <rect id="range-near-r3-c4" class="st7" x="86.14" y="106.98" width="12.28" height="12.28"/>
+        <rect id="range-mid-r3-c5" class="st7" x="98.42" y="106.98" width="12.28" height="12.28"/>
+        <rect id="range-mid-r4-c2" class="st7" x="61.58" y="119.26" width="12.28" height="12.28"/>
+        <rect id="range-mid-r4-c3" class="st7" x="73.86" y="119.26" width="12.28" height="12.28"/>
+        <rect id="range-mid-r4-c4" class="st7" x="86.14" y="119.26" width="12.28" height="12.28"/>
+      </g>
+      <rect id="bg" class="st19" x="33.96" y="0" width="92.08" height="160"/>
+      <g id="grid">
+        <rect id="cell-r0-c0" class="st13" x="37.03" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(37.49 71.53)"><tspan x="0" y="0">r0c0</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r0-c1" class="st13" x="49.31" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(49.77 71.53)"><tspan x="0" y="0">r0c1</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r0-c2" class="st13" x="61.58" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(62.04 71.53)"><tspan x="0" y="0">r0c2</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r0-c3" class="st13" x="73.86" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(74.32 71.53)"><tspan x="0" y="0">r0c3</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r0-c4" class="st13" x="86.14" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(86.6 71.53)"><tspan x="0" y="0">r0c4</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r0-c5" class="st13" x="98.42" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(98.88 71.53)"><tspan x="0" y="0">r0c5</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r0-c6" class="st13" x="110.69" y="70.15" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(111.15 71.53)"><tspan x="0" y="0">r0c6</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c0" class="st13" x="37.03" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(37.49 83.81)"><tspan x="0" y="0">r1c0</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c1" class="st13" x="49.31" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(49.77 83.81)"><tspan x="0" y="0">r1c1</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c2" class="st13" x="61.58" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(62.04 83.81)"><tspan x="0" y="0">r1c2</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c3" class="st13" x="73.86" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(74.32 83.81)"><tspan x="0" y="0">r1c3</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c4" class="st13" x="86.14" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(86.6 83.81)"><tspan x="0" y="0">r1c4</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c5" class="st13" x="98.42" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(98.88 83.81)"><tspan x="0" y="0">r1c5</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r1-c6" class="st13" x="110.69" y="82.43" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(111.15 83.81)"><tspan x="0" y="0">r1c6</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r2-c1" class="st13" x="49.31" y="94.71" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(49.77 96.09)"><tspan x="0" y="0">r2c1</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r2-c2" class="st13" x="61.58" y="94.71" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(62.04 96.09)"><tspan x="0" y="0">r2c2</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r2-c3" class="st13" x="73.86" y="94.71" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(74.32 96.09)"><tspan x="0" y="0">r2c3</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r2-c4" class="st13" x="86.14" y="94.71" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(86.6 96.09)"><tspan x="0" y="0">r2c4</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r2-c5" class="st13" x="98.42" y="94.71" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(98.88 96.09)"><tspan x="0" y="0">r2c5</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r3-c2" class="st13" x="61.58" y="106.98" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(62.04 108.36)"><tspan x="0" y="0">r3c2</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r3-c3" class="st13" x="73.86" y="106.98" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(74.32 108.36)"><tspan x="0" y="0">r3c3</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r3-c4" class="st13" x="86.14" y="106.98" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(86.6 108.36)"><tspan x="0" y="0">r3c4</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r4-c2" class="st13" x="61.58" y="119.26" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(62.04 120.64)"><tspan x="0" y="0">r4c2</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r4-c3" class="st13" x="73.86" y="119.26" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(74.32 120.64)"><tspan x="0" y="0">r4c3</tspan></text>
+          </g>
+        </g>
+        <rect id="cell-r4-c4" class="st13" x="86.14" y="119.26" width="12.28" height="12.28"/>
+        <g class="st4">
+          <g class="st4">
+            <text class="st2" transform="translate(86.6 120.64)"><tspan x="0" y="0">r4c4</tspan></text>
+          </g>
+        </g>
+      </g>
+      <g id="anchors1" data-name="anchors">
+        <g id="hero1" data-name="hero">
+          <circle id="hero-anchor1" data-name="hero-anchor" class="st12" cx="80" cy="113.12" r="2"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(78.62 113.43)"><tspan x="0" y="0">ГЕРОЙ</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e1">
+          <rect id="enemy-e1-anchor" class="st12" x="66.63" y="86.88" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(67.76 88.87)"><tspan x="0" y="0">E1</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e2">
+          <rect id="enemy-e2-anchor" class="st12" x="90.03" y="86.88" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(91.17 88.87)"><tspan x="0" y="0">E2</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e3">
+          <rect id="enemy-e3-anchor" class="st12" x="78.31" y="86.88" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(79.45 88.87)"><tspan x="0" y="0">E3</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e4">
+          <rect id="enemy-e4-anchor" class="st12" x="41.48" y="74.6" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(42.62 76.6)"><tspan x="0" y="0">E4</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e5">
+          <rect id="enemy-e5-anchor" class="st12" x="115.14" y="74.6" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(116.28 76.6)"><tspan x="0" y="0">E5</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e6">
+          <rect id="enemy-e6-anchor" class="st12" x="54.06" y="74.91" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(55.2 76.9)"><tspan x="0" y="0">E6</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e7">
+          <rect id="enemy-e7-anchor" class="st12" x="102.87" y="74.91" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(104 76.9)"><tspan x="0" y="0">E7</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="enemy-e8">
+          <rect id="enemy-e8-anchor" class="st12" x="78.31" y="74.6" width="3.38" height="3.38"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st0" transform="translate(79.45 76.6)"><tspan x="0" y="0">E8</tspan></text>
+            </g>
+          </g>
+        </g>
+      </g>
+      <g id="status-badges">
+        <g id="status-top">
+          <circle class="st12" cx="42.28" cy="111.38" r="1.57"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st3" transform="translate(41.93 111.77)"><tspan x="0" y="0">S</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="status-right">
+          <circle class="st12" cx="42.28" cy="128.62" r="1.57"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st3" transform="translate(41.93 129.01)"><tspan x="0" y="0">S</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="status-bottom">
+          <circle class="st12" cx="42.28" cy="123.17" r="1.57"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st3" transform="translate(41.93 123.57)"><tspan x="0" y="0">S</tspan></text>
+            </g>
+          </g>
+        </g>
+        <g id="status-left">
+          <circle class="st12" cx="42.28" cy="117.27" r="1.57"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st3" transform="translate(41.93 117.67)"><tspan x="0" y="0">S</tspan></text>
+            </g>
+          </g>
+        </g>
+      </g>
+      <g id="ui">
+        <rect id="ui-bg" class="st15" x="37.03" y="134.71" width="85.94" height="12.28" rx=".92" ry=".92"/>
+        <rect class="st18" x="112.74" y="96.69" width="8.94" height="8.94" rx="1.54" ry="1.54"/>
+        <rect class="st16" x="115.87" y="100.69" width="2.75" height="2.75"/>
+        <polygon class="st16" points="117.24 98.21 114.63 100.7 119.86 100.7 117.24 98.21"/>
+        <g>
+          <rect class="st18" x="112.77" y="121.85" width="8.94" height="8.94" rx="1.54" ry="1.54"/>
+          <rect class="st16" x="115.9" y="123.7" width="2.75" height="2.75"/>
+          <polygon class="st16" points="117.28 128.94 119.89 126.44 114.67 126.44 117.28 128.94"/>
+        </g>
+        <g id="btn-end-turn">
+          <rect class="st15" x="65.51" y="149.36" width="28.98" height="6.38" rx=".77" ry=".77"/>
+          <g class="st4">
+            <g class="st4">
+              <text class="st6" transform="translate(71.45 153.42)"><tspan x="0" y="0">КОНЕЦ ХОДА</tspan></text>
+            </g>
+          </g>
+        </g>
+      </g>
+      <rect id="_Ответ_Игры" class="st15" x="37.03" y="11.17" width="85.94" height="42.37"/>
+      <rect id="_лог_боя__x28_цифры_x29_" class="st15" x="37.03" y="55.29" width="85.94" height="11.64"/>
+      <g>
+        <g>
+          <polygon class="st18" points="113.53 6.02 113.38 6.02 110.86 6.02 110.73 5.83 110.86 5.64 113.38 5.64 113.53 5.64 114.74 5.64 114.74 5.14 109.86 5.14 109.33 5.14 108.93 5.14 108.47 5.83 108.93 6.52 109.33 6.52 109.86 6.52 114.74 6.52 114.74 6.02 113.53 6.02"/>
+          <polygon class="st18" points="117.14 5.33 115.99 5.33 115.99 5.83 115.99 6.33 117.14 6.33 117.88 6.33 117.88 6.57 118.29 6.57 118.29 6.33 118.29 6.08 118.29 5.83 118.29 5.58 118.29 5.33 118.29 5.08 117.88 5.08 117.88 5.33 117.14 5.33"/>
+          <polygon class="st18" points="115.16 5.83 115.16 7.2 115.58 7.2 115.58 5.83 115.58 4.46 115.16 4.46 115.16 5.83"/>
+        </g>
+        <g>
+          <polygon class="st18" points="46.47 5.64 46.62 5.64 49.14 5.64 49.27 5.83 49.14 6.02 46.62 6.02 46.47 6.02 45.26 6.02 45.26 6.52 50.14 6.52 50.67 6.52 51.07 6.52 51.53 5.83 51.07 5.14 50.67 5.14 50.14 5.14 45.26 5.14 45.26 5.64 46.47 5.64"/>
+          <polygon class="st18" points="42.86 6.33 44.01 6.33 44.01 5.83 44.01 5.33 42.86 5.33 42.12 5.33 42.12 5.08 41.71 5.08 41.71 5.33 41.71 5.58 41.71 5.83 41.71 6.08 41.71 6.33 41.71 6.57 42.12 6.57 42.12 6.33 42.86 6.33"/>
+          <polygon class="st18" points="44.84 5.83 44.84 4.46 44.42 4.46 44.42 5.83 44.42 7.2 44.84 7.2 44.84 5.83"/>
+        </g>
+      </g>
+      <g>
+        <g>
+          <polygon class="st18" points="113.53 152.74 113.38 152.74 110.86 152.74 110.73 152.55 110.86 152.36 113.38 152.36 113.53 152.36 114.74 152.36 114.74 151.86 109.86 151.86 109.33 151.86 108.93 151.86 108.47 152.55 108.93 153.24 109.33 153.24 109.86 153.24 114.74 153.24 114.74 152.74 113.53 152.74"/>
+          <polygon class="st18" points="117.14 152.05 115.99 152.05 115.99 152.55 115.99 153.05 117.14 153.05 117.88 153.05 117.88 153.29 118.29 153.29 118.29 153.05 118.29 152.8 118.29 152.55 118.29 152.3 118.29 152.05 118.29 151.8 117.88 151.8 117.88 152.05 117.14 152.05"/>
+          <polygon class="st18" points="115.16 152.55 115.16 153.92 115.58 153.92 115.58 152.55 115.58 151.18 115.16 151.18 115.16 152.55"/>
+        </g>
+        <g>
+          <polygon class="st18" points="46.47 152.36 46.62 152.36 49.14 152.36 49.27 152.55 49.14 152.74 46.62 152.74 46.47 152.74 45.26 152.74 45.26 153.24 50.14 153.24 50.67 153.24 51.07 153.24 51.53 152.55 51.07 151.86 50.67 151.86 50.14 151.86 45.26 151.86 45.26 152.36 46.47 152.36"/>
+          <polygon class="st18" points="42.86 153.05 44.01 153.05 44.01 152.55 44.01 152.05 42.86 152.05 42.12 152.05 42.12 151.8 41.71 151.8 41.71 152.05 41.71 152.3 41.71 152.55 41.71 152.8 41.71 153.05 41.71 153.29 42.12 153.29 42.12 153.05 42.86 153.05"/>
+          <polygon class="st18" points="44.84 152.55 44.84 151.18 44.42 151.18 44.42 152.55 44.42 153.92 44.84 153.92 44.84 152.55"/>
+        </g>
+      </g>
+      <g id="_ОА__x28_достпно_x29_">
+        <g>
+          <g>
+            <polygon class="st16" points="104.98 123.61 105.12 123.53 107.54 122.13 107.77 122.24 107.75 122.49 105.33 123.89 105.19 123.97 104.02 124.65 104.3 125.13 108.99 122.41 109.5 122.12 109.88 121.9 109.94 120.99 109.12 120.58 108.74 120.8 108.23 121.09 103.53 123.81 103.81 124.28 104.98 123.61"/>
+            <polygon class="st16" points="101.88 126.28 102.99 125.64 102.71 125.16 102.44 124.68 101.33 125.32 100.62 125.73 100.49 125.49 100.09 125.72 100.22 125.96 100.36 126.2 100.5 126.44 100.64 126.68 100.77 126.92 100.91 127.15 101.31 126.92 101.17 126.68 101.88 126.28"/>
+            <polygon class="st16" points="103.51 124.7 102.75 123.38 102.35 123.61 103.11 124.93 103.88 126.25 104.28 126.02 103.51 124.7"/>
+          </g>
+          <path class="st16" d="M105.01,128.09l-2.36-1.36c-.77-.45-1.25-1.28-1.25-2.17v-4.47h.43c.51,0,1.01-.06,1.51-.17l.24-.06c.93-.21,1.94-.21,2.88,0l.24.06c.49.11,1,.17,1.51.17h.43v4.47c0,.89-.48,1.73-1.25,2.17l-2.36,1.36ZM101.97,120.65v3.9c0,.69.37,1.33.97,1.68l2.08,1.2,2.08-1.2c.6-.34.97-.99.97-1.68v-3.9c-.5,0-1-.07-1.49-.18l-.24-.06c-.86-.19-1.77-.19-2.62,0l-.24.06c-.49.11-.99.17-1.49.18h0Z"/>
+        </g>
+        <g id="_маркер_очков">
+          <circle id="_второго_нет_например" class="st9" cx="106.89" cy="129.98" r="1.12"/>
+          <g id="_Одно_есть_например">
+            <circle class="st9" cx="103.14" cy="129.98" r="1.12"/>
+            <circle class="st16" cx="103.14" cy="129.98" r=".51"/>
+          </g>
+        </g>
+      </g>
+      <g id="_Иконка_движеня__x28_если_ОД_нет_то_бледная_x29_">
+        <path class="st16" d="M117.46,113.64c.23.43.71.5.81.52.2.03.32,0,.39-.04.05-.02.11-.05.16-.12.05-.07.07-.15.06-.25,0-.08-.07-.17,0-.24.09-.08.2.02.25.09.39.49.07,1.34-.31,1.75-.03.03-.09.1-.13.1h-1.77c-.21-.08-.4-.19-.61-.27-.02.11,0,.23-.13.27-.3-.01-.62.03-.92,0-.04,0-.09-.02-.11-.05-.04-.05-.02-.28-.02-.36,0-.03-.01-.05,0-.08,0-.04.03-.09.08-.09h1.3c.23.08.4.27.66.27h1.53s.04-.03.04-.06c0-.05-.06-.08-.08-.09-.02-.01-.04-.02-.06-.02-.44,0-.89.01-1.33.02-.06,0-.11,0-.14,0-.23-.04-.3-.23-.54-.27-.04,0-.08,0-.1,0h-1.28c-.05,0-.09-.04-.1-.09-.04-.19.02-.5.08-.69.04-.11.11-.22.15-.33.02-.06,0-.16,0-.22-.02-.3-.06-.6-.08-.89,0-.04,0-.08.03-.11.04-.03.05-.01.09,0,.35,0,.69,0,1.04,0,.35,0,.7,0,1.06,0,.04.01.06.06.06.1,0,.06-.02.15-.03.21,0,.03,0,.07-.02.09,0,0-.02,0-.02,0-.05,0-.22.46,0,.86h0Z"/>
+        <path class="st16" d="M118.05,110.79c.19-.02.36.04.47.2.08.12.1.33-.03.42-.11.08-.09-.08-.09-.14,0-.09-.07-.17-.17-.16-.29.01-.43.54-.46.77-.01.08,0,.19-.03.26-.02.05-.06.07-.11.07h-2.44c-.15-.01-.12-.16-.13-.27-.02-.17-.03-.35-.04-.52,0-.06-.03-.12,0-.18.02-.03.06-.05.1-.05h2.22s.19-.17.24-.21c.12-.09.3-.16.45-.18Z"/>
+      </g>
+      <g id="_Если_можно_кинуть_кинжал__x2F__морок">
+        <g>
+          <path class="st16" d="M107.1,112.99c-.86.23-1.72.46-2.58.69l-.09-.35,3.65-.98-.33.5c-.32.49-.81.85-1.38,1-.56.15-1.12.3-1.68.45l-.09-.35c.84-.32,1.67-.64,2.51-.96h0s0,0,0,0Z"/>
+          <polygon class="st16" points="104.32 114.14 104.52 114.87 104.22 114.95 104.03 114.22 103.83 113.49 104.12 113.41 104.32 114.14"/>
+          <rect class="st16" x="102.3" y="113.87" width="1.39" height=".73" transform="translate(-26.06 30.55) rotate(-15)"/>
+          <path class="st16" d="M102.09,114.72l-.13-.47c-.04-.16.05-.33.22-.37l.28,1.06c-.16.04-.33-.05-.37-.22h0Z"/>
+        </g>
+        <polygon class="st16" points="108.07 112.35 104.17 112.2 104.18 112.03 108.07 112.35 108.07 112.35"/>
+        <polygon class="st16" points="108.07 112.35 103.58 112.85 103.56 112.68 108.07 112.35 108.07 112.35"/>
+        <polygon class="st16" points="108.07 112.35 107.08 114.82 106.93 114.75 108.07 112.35 108.07 112.35"/>
+      </g>
+      <g>
+        <rect class="st17" x="37.5" y="97.02" width="10.49" height="2.49"/>
+        <g class="st4">
+          <text class="st1" transform="translate(41.82 98.69) scale(1.07 1)"><tspan x="0" y="0">ХП</tspan></text>
+        </g>
+        <rect class="st20" x="37.5" y="100.06" width="10.49" height="2.49"/>
+        <rect class="st21" x="37.5" y="103.09" width="10.49" height="2.49"/>
+        <g class="st4">
+          <text class="st1" transform="translate(40.33 101.8) scale(1.07 1)"><tspan x="0" y="0">УДАЧА</tspan></text>
+        </g>
+        <g class="st4">
+          <text class="st1" transform="translate(38.75 104.97) scale(1.07 1)"><tspan x="0" y="0">УСТАЛОСТЬ</tspan></text>
+        </g>
+      </g>
+      <g class="st4">
+        <text class="st5" transform="translate(74.24 7.2) scale(1.03 1)"><tspan x="0" y="0">БОЙ</tspan></text>
+      </g>
+    </g>
+    <g id="ui1" data-name="ui">
+      <g id="btn-move-forward">
+        <rect class="st14" x="113.11" y="96.78" width="8.34" height="8.76" rx=".77" ry=".77"/>
+      </g>
+      <g id="btn-move-back">
+        <rect class="st14" x="112.99" y="121.85" width="8.59" height="8.8" rx=".77" ry=".77"/>
+      </g>
+      <g id="btn-end-turn1" data-name="btn-end-turn">
+        <rect class="st14" x="65.51" y="149.36" width="28.98" height="6.38" rx=".77" ry=".77"/>
+      </g>
+      <g id="input-describe">
+        <rect class="st14" x="37.03" y="134.71" width="85.94" height="12.32" rx=".77" ry=".77"/>
+      </g>
+    </g>
+  </g>
+</svg>
