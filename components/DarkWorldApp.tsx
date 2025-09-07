@@ -214,35 +214,6 @@ function dist(a:{x:number;y:number}, b:{x:number;y:number}){
 
 function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
 
-function d20(){ return 1 + Math.floor(Math.random()*20); }
-
-type Archetype = "Танк" | "Лучник" | "Ловкач" | "Маг" | "Берсерк";
-type Enemy = {
-  id: string;
-  name: string;
-  kind: Archetype;
-  hp: number;
-  hpMax: number;
-  atk: number; // бонус к атаке (для их хода)
-  def: number; // защитный DC (базовый 12 + бонусы)
-  pos: {x:number;y:number}; // клетка на поле
-  alive: boolean;
-};
-
-const ARCH: Record<Archetype,{hp:number; atk:number; def:number; speed:number; range:number}> = {
-  "Танк":   { hp: 6, atk: 2, def: 13, speed: 1, range: 1 },
-  "Лучник": { hp: 2, atk: 6, def: 12, speed: 1, range: 4 },
-  "Ловкач": { hp: 2, atk: 2, def: 15, speed: 2, range: 1 },
-  "Маг":    { hp: 2, atk: 6, def: 12, speed: 1, range: 4 },
-  "Берсерк":{ hp: 3, atk: 6, def: 12, speed: 1, range: 1 },
-};
-
-function dist(a:{x:number;y:number}, b:{x:number;y:number}){
-  return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y)); // Chebyshev (диагональ=1)
-}
-
-function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
-
 function BattleBlock(){
   const { hero, setHero, battle, setBattle, bus } = useGame();
   const W = 7, H = 5;
