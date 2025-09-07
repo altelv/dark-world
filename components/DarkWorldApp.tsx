@@ -214,6 +214,35 @@ function dist(a:{x:number;y:number}, b:{x:number;y:number}){
 
 function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
 
+function d20(){ return 1 + Math.floor(Math.random()*20); }
+
+type Archetype = "Танк" | "Лучник" | "Ловкач" | "Маг" | "Берсерк";
+type Enemy = {
+  id: string;
+  name: string;
+  kind: Archetype;
+  hp: number;
+  hpMax: number;
+  atk: number; // бонус к атаке (для их хода)
+  def: number; // защитный DC (базовый 12 + бонусы)
+  pos: {x:number;y:number}; // клетка на поле
+  alive: boolean;
+};
+
+const ARCH: Record<Archetype,{hp:number; atk:number; def:number; speed:number; range:number}> = {
+  "Танк":   { hp: 6, atk: 2, def: 13, speed: 1, range: 1 },
+  "Лучник": { hp: 2, atk: 6, def: 12, speed: 1, range: 4 },
+  "Ловкач": { hp: 2, atk: 2, def: 15, speed: 2, range: 1 },
+  "Маг":    { hp: 2, atk: 6, def: 12, speed: 1, range: 4 },
+  "Берсерк":{ hp: 3, atk: 6, def: 12, speed: 1, range: 1 },
+};
+
+function dist(a:{x:number;y:number}, b:{x:number;y:number}){
+  return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y)); // Chebyshev (диагональ=1)
+}
+
+function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
+
 function BattleBlock(){
   const { hero, setHero, battle, setBattle, bus } = useGame();
   const W = 7, H = 5;
@@ -230,7 +259,6 @@ function BattleBlock(){
   // Инициализация боя
   useEffect(()=>{
     if (!battle.active) return;
-    // базовый пак врагов — можно потом генерить ДМом
     const pack: Enemy[] = [
       { id:"e1", name:"Охотник-танк", kind:"Танк",    hp:ARCH["Танк"].hp,    hpMax:ARCH["Танк"].hp,    atk:ARCH["Танк"].atk,    def:ARCH["Танк"].def,    pos:{x:1,y:1}, alive:true },
       { id:"e2", name:"Лучник в маске", kind:"Лучник", hp:ARCH["Лучник"].hp, hpMax:ARCH["Лучник"].hp, atk:ARCH["Лучник"].atk, def:ARCH["Лучник"].def, pos:{x:5,y:1}, alive:true },
@@ -241,14 +269,27 @@ function BattleBlock(){
     setPhase("hero");
     setRound(1);
     startHeroTurn(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battle.active]);
 
-  // Начало хода героя: сброс очков и проверка Фокуса/Стресса
+  // Проверка конца боя/смерти героя (HOOK ДОЛЖЕН БЫТЬ ДО ЛЮБОГО RETURN)
+  useEffect(()=>{
+    if (!battle.active) return;
+    if (enemies.length>0 && enemies.every(e => !e.alive)){
+      setBattle(b => ({...b, log:[...b.log, "Все враги повержены. Победа!"]}));
+    }
+    if (hero.hp <= 0){
+      setBattle(b => ({...b, log:[...b.log, "Вы пали. Тьма поглощает…"]}));
+    }
+  }, [enemies, hero.hp, battle.active, setBattle]);
+
+  // ТОЛЬКО ПОСЛЕ ВСЕХ HOOKS — условный выход
+  if (!battle.active) return null;
+
+  // --- ЛОГИКА ГЕРОЯ И ВРАГОВ ---
   function startHeroTurn(first=false){
     setAp(1);
     setAa(1);
-    // Проверка в начале хода по правилам
     const hasStress = hero.effects?.some(e => /стресс/i.test(e));
     const roll = d20();
     const mod = hero.skills?.["фокус"] ?? hero.skills?.["Фокус"] ?? 0;
@@ -264,7 +305,8 @@ function BattleBlock(){
       }
     } else {
       if (success) {
-        setAa(a => a + 1); // дополнительная атака
+        setAa(a => a + 1);
+        setBattle(b => ({...b, log:[...b,].log}));
         setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} ≥ ${targetDC}: получено доп. ОА.`]}));
       } else {
         setBattle(b => ({...b, log:[...b.log, `Фокус ${roll}+${mod} < ${targetDC}: без бонуса.`]}));
@@ -276,7 +318,6 @@ function BattleBlock(){
   function endHeroTurn(){
     setPhase("enemies");
     setBattle(b => ({...b, log:[...b.log, "Ход Героя завершён."]}));
-    // затем ход врагов
     setTimeout(enemiesTurn, 200);
   }
 
@@ -284,34 +325,28 @@ function BattleBlock(){
     setBattle(b => ({...b, log:[...b.log, "Ход Врагов."]}));
     setEnemies(prev => {
       let arr = [...prev];
-      arr.forEach((e,i)=>{
+      arr.forEach((e)=>{
         if (!e.alive) return;
         const R = ARCH[e.kind].range;
         const S = ARCH[e.kind].speed;
-        // если далеко — подойти
         if (dist(e.pos, heroPos) > R){
           const dx = Math.sign(heroPos.x - e.pos.x);
           const dy = Math.sign(heroPos.y - e.pos.y);
-          e.pos = { x: clamp(e.pos.x + clamp(dx, -S, S), 0, W-1), y: clamp(e.pos.y + clamp(dy, -S, S), 0, H-1) };
-          // лог перемещения
+          e.pos = { x: clamp(e.pos.x + (dx>0?1:dx<0?-1:0)*Math.min(S,abs(dx:=Math.abs(heroPos.x - e.pos.x))?1:1), y: clamp(e.pos.y + (dy>0?1:dy<0?-1:0)*Math.min(S,abs(dy:=Math.abs(heroPos.y - e.pos.y))?1:1), 0, H-1) };
         }
-        // если в радиусе — атаковать
         if (dist(e.pos, heroPos) <= R){
-          // бросок на попадание: d20 + e.atk против Обороны героя (12 + навык оборона + удача - усталость)
           const roll = d20();
           const heroDef = 12 + (hero.skills?.["оборона"] ?? hero.skills?.["Оборона"] ?? 0) + (hero.luck ?? 0) - (hero.fatigue ?? 0);
           const total = roll + e.atk;
           const hit = total >= heroDef;
           setBattle(b => ({...b, log:[...b.log, `${e.name} атакует (${roll}+${e.atk} против ${heroDef}): ${hit?"ПОПАЛ":"мимо"}`]}));
           if (hit){
-            // урон 1 хит (по твоей схеме — снятие хита при успехе)
             setHero(h => ({...h, hp: Math.max(0, h.hp - 1)}));
           }
         }
       });
       return arr;
     });
-    // завершение раунда
     setTimeout(()=>{
       setPhase("hero");
       setRound(r => r + 1);
@@ -337,7 +372,6 @@ function BattleBlock(){
     if (phase!=="hero" || aa<=0) return;
     const target = enemies.find(e => e.id===selectedId && e.alive);
     if (!target) { setBattle(b=>({...b, log:[...b.log, "Нет выбранной цели."]})); return; }
-    // дистанции: Кинжал — 1; Морок — 4
     const rng = kind==="Кинжал"? 1 : 4;
     if (dist(heroPos, target.pos) > rng){
       setBattle(b=>({...b, log:[...b.log, `${kind}: цель вне досягаемости.`]}));
@@ -356,22 +390,7 @@ function BattleBlock(){
     setAa(aa-1);
   }
 
-  function endBattle(){
-    setBattle({ active:false, log:[], turn:1 });
-  }
-
-  if (!battle.active) return null;
-
-  // Проверка конца боя/смерти героя
-  useEffect(()=>{
-    if (!battle.active) return;
-    if (enemies.length>0 && enemies.every(e => !e.alive)){
-      setBattle(b => ({...b, log:[...b.log, "Все враги повержены. Победа!"]}));
-    }
-    if (hero.hp <= 0){
-      setBattle(b => ({...b, log:[...b.log, "Вы пали. Тьма поглощает…"]}));
-    }
-  }, [enemies, hero.hp, battle.active, setBattle]);
+  function endBattle(){ setBattle({ active:false, log:[], turn:1 }); }
 
   // UI
   return (
@@ -381,8 +400,6 @@ function BattleBlock(){
         <Panel title={`Бой • Раунд ${round}`} className="md:col-span-3">
           <div className="text-xs text-white/70">Порядок: Герой → Враги. Сейчас ход: <b>{phase==="hero"?"Героя":"Врагов"}</b>. ОД: <b>{ap}</b> • ОА: <b>{aa}</b></div>
         </Panel>
-
-        {/* Поле боя */}
         <Panel title="Поле боя" className="md:col-span-2">
           <div className="grid grid-cols-7 gap-2">
             {Array.from({length:W*H}).map((_,i)=>{
@@ -396,7 +413,6 @@ function BattleBlock(){
               );
             })}
           </div>
-
           <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
             <button onClick={()=>move("up")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬆️ Движение</button>
             <button onClick={()=>move("left")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬅️</button>
@@ -405,7 +421,6 @@ function BattleBlock(){
             <button onClick={()=>move("down")} className="rounded-xl bg-white/10 py-2 hover:bg-white/20">⬇️</button>
             <div />
           </div>
-
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/70">
             <div>ОД: <b>{ap}</b> • ОА: <b>{aa}</b> • Раунд: <b>{round}</b></div>
             <div className="flex gap-2">
@@ -415,8 +430,6 @@ function BattleBlock(){
             </div>
           </div>
         </Panel>
-
-        {/* Панель целей и лог */}
         <Panel title="Цели и лог">
           <div className="space-y-3">
             <div className="space-y-2">
@@ -424,7 +437,7 @@ function BattleBlock(){
                 <div key={e.id} className={`rounded-xl p-2 text-sm ${!e.alive?"opacity-40":""} ${selectedId===e.id?"bg-white/10":"bg-white/5"}`}>
                   <div className="flex items-center justify-between">
                     <div className="font-medium">{e.name} <span className="text-white/50">({e.kind})</span></div>
-                    <button onClick={()=>pickTarget(e.id)} className="rounded-xl px-2 py-1 bg-white/10 hover:bg-white/20 text-xs">Цель</button>
+                    <button onClick={()=>setSelectedId(e.id)} className="rounded-xl px-2 py-1 bg-white/10 hover:bg-white/20 text-xs">Цель</button>
                   </div>
                   <div className="text-xs text-white/70 mt-1">HP {e.hp}/{e.hpMax} • DEF {e.def} • RNG {ARCH[e.kind].range}</div>
                 </div>
@@ -445,23 +458,7 @@ function BattleBlock(){
 }
 
 
-/******************** КостиБлок ***************/
-function DiceBlock(){
-  const { dice, setDice } = useGame();
-  if (!dice.show) return null;
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={()=>setDice({show:false,value:null,rolling:false})}/>
-      <div className="relative z-10 rounded-2xl bg-neutral-900/90 p-6 shadow-2xl text-center">
-        <div className="text-sm text-white/70 mb-2">Проверка D20</div>
-        <div className="text-6xl font-bold tracking-wider">{dice.rolling? "…": dice.value}</div>
-        <button onClick={()=>setDice({show:false,value:null,rolling:false})} className="mt-4 rounded-xl bg-white/10 px-4 py-2 hover:bg-white/20">Ок</button>
-      </div>
-    </div>
-  );
-}
-
-/*************** 3 колонки ***************/
+/************** 3 колонки ***************/
 function Columns(){
   const [tab, setTab] = useState(1);
   return (
