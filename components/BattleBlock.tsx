@@ -1,13 +1,13 @@
 // components/BattleBlock.tsx
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { useGame } from "./DarkWorldApp"; // useGame должен быть экспортирован именованно из DarkWorldApp.tsx
+import { useGame } from "./DarkWorldApp"; // useGame должен быть ИМЕНОВАННЫМ экспортом
 
-// ==== DEV переключатели ====
-const DEV_AUTOSTART = true;              // ⇦ включить бой автоматически при монтировании (потом выключишь)
-const DEV_HTML_BUTTONS_FALLBACK = true;  // ⇦ добавить HTML‑кнопки, если в SVG нет нужных id
+// DEV-переключатели (для быстрых тестов)
+const DEV_AUTOSTART = true;              // автозапуск боя при монтировании
+const DEV_HTML_BUTTONS_FALLBACK = true;  // временные HTML-кнопки, если их нет в SVG
 
-// ==== типы и утилиты ====
+// Типы и утилиты
 type GPos = { gx:number; gy:number };
 type Archetype = "Танк"|"Лучник"|"Ловкач"|"Маг"|"Берсерк";
 type Enemy = {
@@ -20,7 +20,6 @@ type Enemy = {
   skipNextAttack?: boolean;
   alive: boolean;
 };
-
 const ARCH: Record<Archetype,{hp:number; atk:number; def:number; speed:number; range:number}> = {
   "Танк":   { hp:6, atk:2, def:13, speed:1, range:1 },
   "Лучник": { hp:2, atk:6, def:12, speed:1, range:4 },
@@ -28,7 +27,6 @@ const ARCH: Record<Archetype,{hp:number; atk:number; def:number; speed:number; r
   "Маг":    { hp:2, atk:6, def:12, speed:1, range:4 },
   "Берсерк":{ hp:3, atk:6, def:12, speed:1, range:1 },
 };
-
 function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
 function clampGrid(gx:number, gy:number){ return { gx: clamp(gx,-3,3), gy: clamp(gy,-2,2) }; }
 function cheb(a:GPos, b:GPos){ return Math.max(Math.abs(a.gx-b.gx), Math.abs(a.gy-b.gy)); }
@@ -42,36 +40,16 @@ export default function BattleBlock(){
   const [overlaySvg, setOverlaySvg] = useState<string | null>(null);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
 
-  // контейнер и параметры проекции
-  const hostRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const proj = useRef({ stepX: 90, stepY: 90, heroPx: {x: 300, y: 400} });
 
-  // === (0) DEV автозапуск боя (чтобы сразу увидеть всё) ===
+  // автозапуск боя
   useEffect(()=>{
     if (!DEV_AUTOSTART) return;
     setBattle(b => b.active ? b : ({ ...b, active: true }));
   }, [setBattle]);
 
-  // === (1) Подгон под центральную колонку: занимаем среднюю треть экрана ===
-  const [hostStyle, setHostStyle] = useState<React.CSSProperties>({});
-  useEffect(()=>{
-    const calc = ()=>{
-      const w = typeof window !== "undefined" ? window.innerWidth : 0;
-      const isMobile = w < 768;
-      if (isMobile){
-        setHostStyle({ position:"fixed", top:0, left:0, width:"100vw", height:"100vh", zIndex:30, pointerEvents:"none" });
-      } else {
-        const colW = w/3;
-        setHostStyle({ position:"fixed", top:0, left:colW, width:colW, height:"100vh", zIndex:30, pointerEvents:"none" });
-      }
-    };
-    calc();
-    window.addEventListener("resize", calc);
-    return ()=>window.removeEventListener("resize", calc);
-  }, []);
-
-  // === (2) Грузим SVG оверлей из public/ui ===
+  // загрузка SVG
   useEffect(()=>{
     if (!battle.active) return;
     const tryPaths = [
@@ -83,35 +61,30 @@ export default function BattleBlock(){
     ];
     (async ()=>{
       for (const p of tryPaths){
-        try{
-          const r = await fetch(p);
-          if (r.ok){
-            setOverlaySvg(await r.text());
-            return;
-          }
-        }catch{}
+        try{ const r = await fetch(p); if (r.ok){ setOverlaySvg(await r.text()); return; } }catch{}
       }
-      setBattle(b=>({...b, log:[...b.log, "SVG оверлей не найден (ищу в /public/ui)."]}));
+      setBattle(b=>({...b, log:[...b.log, "SVG: файл не найден (ищу в /public/ui)."]}));
     })();
   }, [battle.active, setBattle]);
 
-  // === (3) Рендерим SVG, находим якоря, готовим врагов ===
+  // инициализация SVG, спавнов, кнопок
   useEffect(()=>{
     if (!overlaySvg || !overlayRef.current || !battle.active) return;
     const root = overlayRef.current;
     root.innerHTML = overlaySvg;
 
-    // заставим <svg> растянуться на контейнер
     const svg = root.querySelector("svg") as SVGSVGElement | null;
     if (svg){
       svg.setAttribute("width","100%");
       svg.setAttribute("height","100%");
       svg.setAttribute("preserveAspectRatio","xMidYMid meet");
-      svg.removeAttribute("style");
+      (svg as any).style.display = "block";
+      (svg as any).style.width = "100%";
+      (svg as any).style.height = "100%";
       (svg as any).style.pointerEvents = "auto";
     }
 
-    // центр героя
+    // якорь героя
     const heroG = root.querySelector("#hero") as SVGGElement | null;
     let heroPx = { x: 360, y: 480 };
     if (heroG){
@@ -121,16 +94,16 @@ export default function BattleBlock(){
     }
 
     // спавны
-    const spawns = Array.from(root.querySelectorAll('[id^="spawn-e"]')) as SVGGElement[];
-    let localSpawns: Array<SVGGElement | {gx:number; gy:number}> = spawns;
+    const spawnEls = Array.from(root.querySelectorAll('[id^="spawn-e"]')) as SVGGElement[];
+    let localSpawns: Array<SVGGElement | {gx:number; gy:number}> = spawnEls;
     if (!localSpawns.length){
       // фолбэк: три логические точки перед героем
       localSpawns = [{gx:0,gy:2},{gx:-1,gy:2},{gx:1,gy:2}];
     }
 
-    // оценим шаг сетки по спавнам (если спавны логические — используем дефолт)
+    // оценим шаг сетки
     const dxs:number[] = [], dys:number[] = [];
-    spawns.forEach(s=>{
+    spawnEls.forEach(s=>{
       const t = s.getAttribute("transform")||"";
       const m = t.match(/translate\(([-0-9.]+),\s*([-0-9.]+)\)/);
       if (m){ dxs.push(Math.abs(parseFloat(m[1])-heroPx.x)); dys.push(Math.abs(parseFloat(m[2])-heroPx.y)); }
@@ -140,51 +113,50 @@ export default function BattleBlock(){
     const stepY = Math.max(48, Math.round(median(dys,96)));
     proj.current = { stepX, stepY, heroPx };
 
-    // собрать список врагов
+    // враги
     let initial: Enemy[] = [];
-    const setup:any = (battle as any).setup;
-    if (Array.isArray(setup?.enemies) && setup.enemies.length){
-      initial = setup.enemies.map((e:any, idx:number)=>{
-        const kind:Archetype = (e.kind ?? e.archetype ?? "Танк");
-        const base = ARCH[kind];
-        let gx=0, gy=0;
-        const ss = typeof e.spawnId === "string" ? (root.querySelector(`#${e.spawnId}`) as SVGGElement | null) : null;
-        const s = ss ?? (spawns[idx] || null);
-        if (s){
-          const t = s.getAttribute("transform")||"";
-          const m = t.match(/translate\(([-0-9.]+),\s*([-0-9.]+)\)/);
-          if (m){
-            const px = { x: parseFloat(m[1]), y: parseFloat(m[2]) };
-            gx = Math.round((px.x-heroPx.x)/stepX);
-            gy = Math.round((px.y-heroPx.y)/stepY);
+    try{
+      const setup:any = (battle as any).setup;
+      if (Array.isArray(setup?.enemies) && setup.enemies.length){
+        initial = setup.enemies.map((e:any, idx:number)=>{
+          const kind:Archetype = (e.kind ?? e.archetype ?? "Танк");
+          const base = ARCH[kind];
+          let gx=0, gy=0;
+          const ss = typeof e.spawnId === "string" ? (root.querySelector(`#${e.spawnId}`) as SVGGElement | null) : null;
+          const s = ss ?? (spawnEls[idx] || null);
+          if (s){
+            const t = s.getAttribute("transform")||"";
+            const m = t.match(/translate\(([-0-9.]+),\s*([-0-9.]+)\)/);
+            if (m){
+              const px = { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+              gx = Math.round((px.x-heroPx.x)/stepX);
+              gy = Math.round((px.y-heroPx.y)/stepY);
+            }
           }
-        }
-        gx = clamp(gx,-3,3); gy = clamp(gy,-2,2);
-        return { id:e.id??`e${idx+1}`, name:e.name??`${kind} #${idx+1}`, kind,
-          hp:e.hp??base.hp, hpMax:base.hp, atk:base.atk, def:base.def, speed:base.speed, range:base.range,
-          g:{gx,gy}, alive:true };
-      });
-    } else {
+          gx = clamp(gx,-3,3); gy = clamp(gy,-2,2);
+          return { id:e.id??`e${idx+1}`, name:e.name??`${kind} #${idx+1}`, kind,
+            hp:e.hp??base.hp, hpMax:base.hp, atk:base.atk, def:base.def, speed:base.speed, range:base.range,
+            g:{gx,gy}, alive:true };
+        });
+      }
+    }catch{}
+
+    if (!initial.length){
       const kinds:Archetype[] = ["Танк","Лучник","Маг"];
       initial = localSpawns.slice(0,3).map((s:any, i:number)=>{
-        const kind = kinds[i%kinds.length];
-        const base = ARCH[kind];
+        const kind = kinds[i%kinds.length]; const base = ARCH[kind];
         if (s instanceof SVGGElement){
           const t = s.getAttribute("transform")||"";
           const m = t.match(/translate\(([-0-9.]+),\s*([-0-9.]+)\)/);
           let gx=0,gy=0;
-          if (m){
-            const px = { x: parseFloat(m[1]), y: parseFloat(m[2]) };
-            gx = Math.round((px.x-heroPx.x)/stepX);
-            gy = Math.round((px.y-heroPx.y)/stepY);
-          }
+          if (m){ const px = { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+            gx = Math.round((px.x-heroPx.x)/stepX); gy = Math.round((px.y-heroPx.y)/stepY); }
           gx = clamp(gx,-3,3); gy = clamp(gy,-2,2);
           return { id:`e${i+1}`, name:`${kind} #${i+1}`, kind,
             hp:base.hp, hpMax:base.hp, atk:base.atk, def:base.def, speed:base.speed, range:base.range,
             g:{gx,gy}, alive:true };
         } else {
-          const gx = clamp(s.gx, -3,3);
-          const gy = clamp(s.gy, -2,2);
+          const gx = clamp(s.gx, -3,3); const gy = clamp(s.gy, -2,2);
           return { id:`e${i+1}`, name:`${kind} #${i+1}`, kind,
             hp:base.hp, hpMax:base.hp, atk:base.atk, def:base.def, speed:base.speed, range:base.range,
             g:{gx,gy}, alive:true };
@@ -193,7 +165,7 @@ export default function BattleBlock(){
     }
     setEnemies(initial);
 
-    // Подцепим кнопки
+    // кнопки из SVG
     const btnF = root.querySelector("#btn-move-forward");
     const btnB = root.querySelector("#btn-move-back");
     const btnE = root.querySelector("#btn-end-turn");
@@ -204,25 +176,25 @@ export default function BattleBlock(){
     btnB?.addEventListener("click", onB);
     btnE?.addEventListener("click", onE);
 
-    // если кнопок нет в svg — временная HTML‑панель
+    // временная HTML-панель, если кнопок нет в SVG
     let panel: HTMLDivElement | null = null;
     if (DEV_HTML_BUTTONS_FALLBACK && !btnF && !btnB && !btnE){
       panel = document.createElement("div");
-      panel.className = "pointer-events-auto absolute left-2 right-2 bottom-3 flex gap-2 justify-center";
+      panel.className = "absolute left-2 right-2 bottom-3 flex gap-2 justify-center";
       const mk = (label:string, onClick:()=>void)=>{
         const b = document.createElement("button");
         b.textContent = label;
-        b.className = "px-3 py-2 rounded bg-black/60 text-white border border-white/20 hover:bg-white/20";
+        b.className = "px-3 py-2 rounded bg-black/70 text-white border border-white/20 hover:bg-white/30";
         b.addEventListener("click", (e)=>{ e.preventDefault(); onClick(); });
         panel!.appendChild(b);
       };
       mk("Назад", ()=>shiftAll(-1));
       mk("Конец хода", ()=>endHeroTurn());
       mk("Вперёд", ()=>shiftAll(+1));
-      overlayRef.current!.appendChild(panel);
+      root.appendChild(panel);
     }
 
-    // ДМ — единоразовое приветствие при старте
+    // разовая реплика ДМ
     if (!(battle as any).dmStarted){
       fetch("/api/narrator", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ prompt: "Начало боя. Опиши мрачную сцену в 2–3 фразах." }) })
         .then(r=>r.json()).then(({text})=>{
@@ -243,16 +215,13 @@ export default function BattleBlock(){
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overlaySvg, battle.active]);
 
-  // === (4) Рендер простых маркеров врагов поверх SVG (временная заглушка) ===
+  // рисуем простые маркеры врагов поверх SVG (времянка)
   useEffect(()=>{
-    if (!overlayRef.current) return;
     const root = overlayRef.current;
-    // очистим старый слой
+    if (!root) return;
     Array.from(root.querySelectorAll("#npc-layer")).forEach(n=>n.parentElement?.removeChild(n));
-    const layer = document.createElementNS("http://www.w3.org/2000/svg","g");
-    layer.setAttribute("id","npc-layer");
-    const svg = root.querySelector("svg");
-    svg?.appendChild(layer);
+    const layer = document.createElementNS("http://www.w3.org/2000/svg","g"); layer.setAttribute("id","npc-layer");
+    const svg = root.querySelector("svg"); svg?.appendChild(layer);
     const { stepX, stepY, heroPx } = proj.current;
     enemies.forEach(e=>{
       if (!e.alive) return;
@@ -271,32 +240,28 @@ export default function BattleBlock(){
     });
   }, [enemies]);
 
-  // === (5) Начало хода героя: ОД/ОА, авто‑Фокус (DC12) ===
+  // старт хода героя: ОД/ОА, авто-Фокус
   useEffect(()=>{
     if (!battle.active || phase!=="hero") return;
     setAp(1); setAa(1);
     const modFocus = (hero as any).skills?.["Фокус"] ?? (hero as any).skills?.["фокус"] ?? 0;
     const roll = d20();
     if (roll + modFocus >= 12){
-      setAa(a=>a+1);
-      setBattle(b=>({...b, log:[...b.log, `D=${roll} + Фокус(${modFocus}) ≥ 12 → +1 ОА`]}));
+      setAa(a=>a+1); setBattle(b=>({...b, log:[...b.log, `D=${roll} + Фокус(${modFocus}) ≥ 12 → +1 ОА`]}));
     } else {
       setBattle(b=>({...b, log:[...b.log, `D=${roll} + Фокус(${modFocus}) < 12 → без бонуса`]}));
     }
   }, [phase, battle.active]);
 
-  // === (6) Действия героя ===
   function endHeroTurn(){
     if (!battle.active) return;
     setBattle(b=>({...b, log:[...b.log, "Ход героя завершён."]}));
-    setPhase("enemies");
-    setTimeout(enemiesTurn, 120);
+    setPhase("enemies"); setTimeout(enemiesTurn, 120);
   }
 
   function shiftAll(dir:1|-1){
     if (phase!=="hero") return;
     if (ap<=0){ setBattle(b=>({...b, log:[...b.log, "Нет ОД для сдвига."]})); return; }
-    // запрет: если клетка прямо спереди/сзади занята
     const front = dir===1 ? {gx:0,gy:+1} : {gx:0,gy:-1};
     if (enemies.some(e=>e.alive && e.g.gx===front.gx && e.g.gy===front.gy)){
       setBattle(b=>({...b, log:[...b.log, dir===1?"Вперёд нельзя — враг спереди.":"Назад нельзя — враг сзади."]})); return;
@@ -317,27 +282,23 @@ export default function BattleBlock(){
       if (free(far)){ occ.delete(`${e.g.gx},${e.g.gy}`); occ.add(`${far.gx},${far.gy}`); return {...e, g:far}; }
       return e;
     });
-    setEnemies(next);
-    setAp(v=>v-1);
+    setEnemies(next); setAp(v=>v-1);
     setBattle(b=>({...b, log:[...b.log, dir===1?"Сдвиг вперёд: враги вниз":"Сдвиг назад: враги вверх"]}));
   }
 
-  // === (7) Фаза врагов: дальние первыми, укрытие = иммунитет к дальним ===
   function enemiesTurn(){
     if (!battle.active) return;
     const heroG = { gx:0, gy:0 };
     const nearAny = enemies.some(e=>e.alive && cheb(e.g, heroG)<=1);
     const cover = !nearAny;
     if (cover) setBattle(b=>({...b, log:[...b.log, "Укрытие: иммунитет к дальним атакам на фазу врагов."]}));
-
     const rangedKinds = new Set<Archetype>(["Лучник","Маг"]);
     let arr = [...enemies];
     const ranged = arr.filter(e=>e.alive && rangedKinds.has(e.kind));
     const melee  = arr.filter(e=>e.alive && !rangedKinds.has(e.kind));
 
     function enemyAttack(idx:number){
-      const e = arr[idx];
-      const roll = d20();
+      const e = arr[idx]; const roll = d20();
       const heroDefBase = 12 + ((hero as any).skills?.["Оборона"] ?? (hero as any).skills?.["оборона"] ?? 0) + ((hero as any).luck ?? 0) - ((hero as any).fatigue ?? 0);
       const heroDef = (hero as any).effects?.some((s:string)=>/оглуш/i.test(s)) ? heroDefBase - 2 : heroDefBase;
       const hit = roll + e.atk >= heroDef;
@@ -348,15 +309,12 @@ export default function BattleBlock(){
 
     // дальние
     ranged.forEach(e=>{
-      const idx = arr.findIndex(x=>x.id===e.id);
-      if (idx<0) return;
+      const idx = arr.findIndex(x=>x.id===e.id); if (idx<0) return;
       const d = cheb(arr[idx].g, heroG);
       if (d<=1){
-        // отступ
         const dx = arr[idx].g.gx===0 ? 0 : (arr[idx].g.gx>0? 1 : -1);
         const dy = arr[idx].g.gy===0 ? 0 : (arr[idx].g.gy>0? 1 : -1);
-        const tryCells = [{gx:arr[idx].g.gx+dx, gy:arr[idx].g.gy+dy},{gx:arr[idx].g.gx+dx, gy:arr[idx].g.gy},{gx:arr[idx].g.gx, gy:arr[idx].g.gy+dy}]
-          .map(c=>clampGrid(c.gx,c.gy));
+        const tryCells = [{gx:arr[idx].g.gx+dx, gy:arr[idx].g.gy+dy},{gx:arr[idx].g.gx+dx, gy:arr[idx].g.gy},{gx:arr[idx].g.gx, gy:arr[idx].g.gy+dy}].map(c=>clampGrid(c.gx,c.gy));
         const occ = new Set(arr.filter((x,ii)=>x.alive && ii!==idx).map(x=>`${x.g.gx},${x.g.gy}`));
         const found = tryCells.find(c=>!occ.has(`${c.gx},${c.gy}`) && !(c.gx===0&&c.gy===0));
         if (found){ arr[idx] = {...arr[idx], g:found}; setBattle(b=>({...b, log:[...b.log, `${e.name} отступает.`]})); }
@@ -369,8 +327,7 @@ export default function BattleBlock(){
 
     // ближние
     melee.forEach(e=>{
-      const idx = arr.findIndex(x=>x.id===e.id);
-      if (idx<0) return;
+      const idx = arr.findIndex(x=>x.id===e.id); if (idx<0) return;
       let steps = arr[idx].speed;
       while (steps>0 && cheb(arr[idx].g, heroG)>1){
         const gx = arr[idx].g.gx, gy = arr[idx].g.gy;
@@ -393,9 +350,11 @@ export default function BattleBlock(){
 
   if (!battle.active) return null;
 
+  // ВАЖНО: родитель средней колонки должен быть .relative,
+  // чтобы этот absolute занял её целиком
   return (
-    <div ref={hostRef} style={hostStyle} className="pointer-events-none">
-      <div ref={overlayRef} className="w-full h-full pointer-events-auto" />
+    <div className="absolute inset-0 z-40">
+      <div ref={overlayRef} className="w-full h-full" />
     </div>
   );
 }
