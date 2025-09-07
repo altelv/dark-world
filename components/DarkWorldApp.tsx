@@ -214,7 +214,7 @@ function dist(a:{x:number;y:number}, b:{x:number;y:number}){
 
 function clamp(v:number, min:number, max:number){ return Math.max(min, Math.min(max, v)); }
 
-function BattleBlock(){
+function OldBattleBlock(){
   const { hero, setHero, battle, setBattle, bus } = useGame();
   const W = 7, H = 5;
 
