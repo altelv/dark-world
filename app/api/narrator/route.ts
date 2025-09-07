@@ -1,5 +1,6 @@
 // app/api/narrator/route.ts
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -13,8 +14,8 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: "google/gemini-2.0-flash-exp:free",
         messages: [
-          { role: "system", content: "Ты мрачный рассказчик (ДМ) тёмного фэнтези. Пиши кратко, кинематографично, без спама. 2–3 фразы максимум." },
-          { role: "user", content: prompt ?? "Начало боя. Опиши сцену в 2–3 фразах." }
+          { role: "system", content: "Ты мрачный рассказчик (ДМ) тёмного фэнтези. Пиши кратко и образно. 2–3 фразы." },
+          { role: "user", content: prompt ?? "Начало боя. Опиши сцену." }
         ],
         temperature: 0.8,
       })
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     const data = await r.json();
     const text = data?.choices?.[0]?.message?.content ?? "Тьма сгущается. Враг близко.";
     return NextResponse.json({ text });
-  } catch (e:any) {
+  } catch {
     return NextResponse.json({ text: "ДМ молчит. Холодная тишина перед бурей." }, { status: 200 });
   }
 }
