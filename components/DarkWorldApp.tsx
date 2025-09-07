@@ -31,7 +31,7 @@ type GameCtxType = {
 };
 
 const GameCtx = createContext<GameCtxType | null>(null);
-function useGame() {
+export function useGame() {
   const ctx = useContext(GameCtx);
   if (!ctx) throw new Error("Game context missing");
   return ctx;
