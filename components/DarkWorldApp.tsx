@@ -434,6 +434,31 @@ function BattleBlock(){
 
 
 /************** 3 колонки ***************/
+/*************** КостиБлок — D20 ***************/
+function DiceBlock(){
+  const { dice, setDice } = useGame();
+  if (!dice.show) return null;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center">
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={()=>setDice({ show:false, value:null, rolling:false })}
+      />
+      <div className="relative z-10 rounded-2xl bg-neutral-900/90 p-6 shadow-2xl text-center">
+        <div className="text-sm text-white/70 mb-2">Проверка D20</div>
+        <div className="text-6xl font-bold tracking-wider">{dice.rolling ? "…" : dice.value}</div>
+        <button
+          onClick={()=>setDice({ show:false, value:null, rolling:false })}
+          className="mt-4 rounded-xl bg-white/10 px-4 py-2 hover:bg-white/20"
+        >
+          Ок
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 function Columns(){
   const [tab, setTab] = useState(1);
   return (
