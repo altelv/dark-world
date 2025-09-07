@@ -3,12 +3,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGame } from "./DarkWorldApp"; "./DarkWorldApp"; // assumes useGame context is exported here
 
-export function useGame() {
-  const ctx = React.useContext<any>(GameContext);
-  if (!ctx) throw new Error("useGame must be used within GameContext.Provider");
-  return ctx;
-}
-
 type GPos = { gx:number; gy:number };
 type Archetype = "Танк"|"Лучник"|"Ловкач"|"Маг"|"Берсерк";
 type Enemy = {
